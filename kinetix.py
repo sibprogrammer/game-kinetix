@@ -182,6 +182,8 @@ class JoystickControls(Controls):
         self.joystick = joystick
         self.back_previous_down = False
         self.is_back_pressed = False
+        self.pause_previous_down = False
+        self.is_pause_pressed = False
         joystick.init()
 
     def update(self):
@@ -192,6 +194,12 @@ class JoystickControls(Controls):
         )
         self.is_back_pressed = back_down and not self.back_previous_down
         self.back_previous_down = back_down
+        pause_down = (
+            self.joystick.get_numbuttons() > 2
+            and self.joystick.get_button(2) != 0
+        )
+        self.is_pause_pressed = pause_down and not self.pause_previous_down
+        self.pause_previous_down = pause_down
 
     def get_x(self):
         if self.joystick.get_numhats() > 0:
@@ -216,6 +224,9 @@ class JoystickControls(Controls):
 
     def back_pressed(self):
         return self.is_back_pressed
+
+    def pause_pressed(self):
+        return self.is_pause_pressed
 
 class AIControls(Controls):
     def __init__(self):
@@ -842,9 +853,10 @@ ai_controls = AIControls()
 state = State.TITLE
 game = None
 total_frames = 0
+paused = False
 
 def update():
-    global state, game, total_frames
+    global state, game, total_frames, paused
     if game is None:
         game = Game(ai_controls)
 
@@ -852,6 +864,12 @@ def update():
 
     update_controls()
     handle_joystick_back()
+    if (
+        state == State.PLAY
+        and joystick_controls is not None
+        and joystick_controls.pause_pressed()
+    ):
+        toggle_pause()
 
     if state == State.TITLE:
         ai_controls.update()
@@ -861,9 +879,12 @@ def update():
             if controls is not None and controls.fire_pressed():
                 game = Game(controls)
                 state = State.PLAY
+                paused = False
                 stop_music()
                 break
     elif state == State.PLAY:
+        if paused:
+            return
         if game.lives > 0:
             game.update()
         else:
@@ -894,6 +915,9 @@ def draw():
             screen.blit(f"start{(total_frames // 4) % 13}", (WIDTH//2 - 250//2, 530))
         elif state == State.GAME_OVER:
             screen.blit(f"gameover{(total_frames // 4) % 15}", (WIDTH//2 - 450//2, 450))
+        if paused:
+            screen.draw.text("PAUSED", center=(WIDTH // 2, HEIGHT // 2),
+                             fontsize=48, color="white")
         screen.surface = display_surface
         pgzero_game.screen = actor_surface
         display_surface.fill((0, 0, 0))
@@ -908,6 +932,9 @@ def draw():
             screen.blit(f"start{(total_frames // 4) % 13}", (WIDTH//2 - 250//2, 530))
         elif state == State.GAME_OVER:
             screen.blit(f"gameover{(total_frames // 4) % 15}", (WIDTH//2 - 450//2, 450))
+        if paused:
+            screen.draw.text("PAUSED", center=(WIDTH // 2, HEIGHT // 2),
+                             fontsize=48, color="white")
 
 
 def play_music(name):
@@ -925,22 +952,33 @@ def stop_music():
 def on_key_down(key):
     if key == keys.ESCAPE:
         sys.exit(0)
+    elif key == keys.RETURN and state == State.PLAY:
+        toggle_pause()
+
+def toggle_pause():
+    global paused
+    paused = not paused
+    if paused:
+        music.pause()
+    else:
+        music.unpause()
 
 def handle_joystick_back():
     if joystick_controls is None or not joystick_controls.back_pressed():
         return
 
-    global game, state
+    global game, state, paused
     if state == State.PLAY:
         game = Game(ai_controls)
         state = State.TITLE
+        paused = False
         play_music("title_theme")
     elif state in (State.TITLE, State.GAME_OVER):
         sys.exit(0)
 
 def main():
     global keyboard_controls, joystick_controls, ai_controls, state, game, total_frames
-    global fullscreen_mode
+    global fullscreen_mode, paused
 
     fullscreen_mode = "--debug" not in sys.argv
     if fullscreen_mode:
@@ -964,6 +1002,7 @@ def main():
     state = State.TITLE
     game = None
     total_frames = 0
+    paused = False
 
     pgzrun.go()
 
