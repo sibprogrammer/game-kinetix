@@ -228,6 +228,22 @@ class JoystickControls(Controls):
     def pause_pressed(self):
         return self.is_pause_pressed
 
+class PlayerControls(Controls):
+    def __init__(self, keyboard_controls):
+        super().__init__()
+        self.keyboard_controls = keyboard_controls
+
+    def get_x(self):
+        x = self.keyboard_controls.get_x()
+        if joystick_controls is not None:
+            x += joystick_controls.get_x()
+        return max(-BAT_SPEED, min(BAT_SPEED, x))
+
+    def fire_down(self):
+        return self.keyboard_controls.fire_down() or (
+            joystick_controls is not None and joystick_controls.fire_down()
+        )
+
 class AIControls(Controls):
     def __init__(self):
         super().__init__()
@@ -835,12 +851,13 @@ def setup_joystick_controls():
     joystick_controls = JoystickControls(joystick) if joystick is not None else None
 
 def update_controls():
-    global keyboard_controls, joystick_controls
+    global keyboard_controls, joystick_controls, player_controls
     keyboard_controls.update()
     if joystick_controls is None:
         setup_joystick_controls()
     if joystick_controls is not None:
         joystick_controls.update()
+    player_controls.update()
 
 class State(Enum):
     TITLE = 1
@@ -849,6 +866,7 @@ class State(Enum):
 
 keyboard_controls = KeyboardControls()
 joystick_controls = None
+player_controls = PlayerControls(keyboard_controls)
 ai_controls = AIControls()
 state = State.TITLE
 game = None
@@ -877,7 +895,7 @@ def update():
 
         for controls in (keyboard_controls, joystick_controls):
             if controls is not None and controls.fire_pressed():
-                game = Game(controls)
+                game = Game(player_controls)
                 state = State.PLAY
                 paused = False
                 stop_music()
@@ -977,7 +995,8 @@ def handle_joystick_back():
         sys.exit(0)
 
 def main():
-    global keyboard_controls, joystick_controls, ai_controls, state, game, total_frames
+    global keyboard_controls, joystick_controls, player_controls
+    global ai_controls, state, game, total_frames
     global fullscreen_mode, paused
 
     fullscreen_mode = "--debug" not in sys.argv
@@ -997,6 +1016,7 @@ def main():
 
     keyboard_controls = KeyboardControls()
     setup_joystick_controls()
+    player_controls = PlayerControls(keyboard_controls)
 
     ai_controls = AIControls()
     state = State.TITLE
