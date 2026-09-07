@@ -1,4 +1,5 @@
 import os
+import sys
 import pygame, pgzrun, math
 from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
@@ -6,7 +7,7 @@ from random import random, randint, uniform, choice
 
 from pgzero import music
 from pgzero.actor import Actor
-from pgzero.keyboard import keyboard
+from pgzero.keyboard import keyboard, keys
 from pygame import surface
 from pygame.examples.grid import Game
 from pygame.math import Vector2
@@ -30,6 +31,7 @@ SHADOW_OFFSET = 10
 POWERUP_CHANCE = 0.2
 BULLET_SPEED, FIRE_INTERVAL = 8, 30
 PORTAL_ANIMATION_SPEED = 5
+fullscreen_mode = True
 
 LEVELS = [
         ["        ",
@@ -200,6 +202,13 @@ class JoystickControls(Controls):
             print("Joystick has no buttons.")
             return False
         return self.joystick.get_button(0) != 0
+
+    def exit_pressed(self):
+        button_count = self.joystick.get_numbuttons()
+        return any(
+            button < button_count and self.joystick.get_button(button)
+            for button in (9, 12)
+        )
 
 class AIControls(Controls):
     def __init__(self):
@@ -835,6 +844,8 @@ def update():
     total_frames += 1
 
     update_controls()
+    if exit_from_joystick():
+        sys.exit(0)
 
     if state == State.TITLE:
         ai_controls.update()
@@ -863,13 +874,34 @@ def draw():
     if game is None:
         return
 
-    game.draw()
-    if state == State.TITLE:
-        screen.blit("title", (0, 0))
-        screen.blit("startgame", (20, 80))
-        screen.blit(f"start{(total_frames // 4) % 13}", (WIDTH//2 - 250//2, 530))
-    elif state == State.GAME_OVER:
-        screen.blit(f"gameover{(total_frames // 4) % 15}", (WIDTH//2 - 450//2, 450))
+    if fullscreen_mode:
+        from pgzero import game as pgzero_game
+        display_surface = screen.surface
+        actor_surface = pgzero_game.screen
+        field_surface = pygame.Surface((WIDTH, HEIGHT))
+        screen.surface = field_surface
+        pgzero_game.screen = field_surface
+        game.draw()
+        if state == State.TITLE:
+            screen.blit("title", (0, 0))
+            screen.blit("startgame", (20, 80))
+            screen.blit(f"start{(total_frames // 4) % 13}", (WIDTH//2 - 250//2, 530))
+        elif state == State.GAME_OVER:
+            screen.blit(f"gameover{(total_frames // 4) % 15}", (WIDTH//2 - 450//2, 450))
+        screen.surface = display_surface
+        pgzero_game.screen = actor_surface
+        display_surface.fill((0, 0, 0))
+        x = (display_surface.get_width() - WIDTH) // 2
+        y = (display_surface.get_height() - HEIGHT) // 2
+        display_surface.blit(field_surface, (x, y))
+    else:
+        game.draw()
+        if state == State.TITLE:
+            screen.blit("title", (0, 0))
+            screen.blit("startgame", (20, 80))
+            screen.blit(f"start{(total_frames // 4) % 13}", (WIDTH//2 - 250//2, 530))
+        elif state == State.GAME_OVER:
+            screen.blit(f"gameover{(total_frames // 4) % 15}", (WIDTH//2 - 450//2, 450))
 
 
 def play_music(name):
@@ -884,10 +916,23 @@ def stop_music():
     except Exception:
         pass
 
+def on_key_down(key):
+    if key == keys.ESCAPE:
+        sys.exit(0)
+
+def exit_from_joystick():
+    return joystick_controls is not None and joystick_controls.exit_pressed()
+
 def main():
     global keyboard_controls, joystick_controls, ai_controls, state, game, total_frames
+    global fullscreen_mode
 
-    os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
+    fullscreen_mode = "--debug" not in sys.argv
+    if fullscreen_mode:
+        from pgzero import game as pgzero_game
+        pgzero_game.DISPLAY_FLAGS |= pygame.FULLSCREEN
+    else:
+        os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
 
     try:
         pygame.mixer.quit()
