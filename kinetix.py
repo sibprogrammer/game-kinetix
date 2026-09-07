@@ -181,8 +181,13 @@ class JoystickControls(Controls):
         joystick.init()
 
     def get_x(self):
-        if self.joystick.get_numaxes() > 0 and self.joystick.get_hat(0)[0] != 0:
-            return self.joystick.get_hat(0)[0] * BAT_SPEED
+        if self.joystick.get_numhats() > 0:
+            hat_x = self.joystick.get_hat(0)[0]
+            if hat_x != 0:
+                return hat_x * BAT_SPEED
+
+        if self.joystick.get_numaxes() <= 0:
+            return 0
 
         axis_value = self.joystick.get_axis(0)
         if abs(axis_value) <= 0.2:
