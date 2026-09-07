@@ -180,7 +180,18 @@ class JoystickControls(Controls):
     def __init__(self, joystick):
         super().__init__()
         self.joystick = joystick
+        self.back_previous_down = False
+        self.is_back_pressed = False
         joystick.init()
+
+    def update(self):
+        super().update()
+        back_down = (
+            self.joystick.get_numbuttons() > 1
+            and self.joystick.get_button(1) != 0
+        )
+        self.is_back_pressed = back_down and not self.back_previous_down
+        self.back_previous_down = back_down
 
     def get_x(self):
         if self.joystick.get_numhats() > 0:
@@ -203,12 +214,8 @@ class JoystickControls(Controls):
             return False
         return self.joystick.get_button(0) != 0
 
-    def exit_pressed(self):
-        button_count = self.joystick.get_numbuttons()
-        return any(
-            button < button_count and self.joystick.get_button(button)
-            for button in (9, 12)
-        )
+    def back_pressed(self):
+        return self.is_back_pressed
 
 class AIControls(Controls):
     def __init__(self):
@@ -844,8 +851,7 @@ def update():
     total_frames += 1
 
     update_controls()
-    if exit_from_joystick():
-        sys.exit(0)
+    handle_joystick_back()
 
     if state == State.TITLE:
         ai_controls.update()
@@ -920,8 +926,17 @@ def on_key_down(key):
     if key == keys.ESCAPE:
         sys.exit(0)
 
-def exit_from_joystick():
-    return joystick_controls is not None and joystick_controls.exit_pressed()
+def handle_joystick_back():
+    if joystick_controls is None or not joystick_controls.back_pressed():
+        return
+
+    global game, state
+    if state == State.PLAY:
+        game = Game(ai_controls)
+        state = State.TITLE
+        play_music("title_theme")
+    elif state in (State.TITLE, State.GAME_OVER):
+        sys.exit(0)
 
 def main():
     global keyboard_controls, joystick_controls, ai_controls, state, game, total_frames
