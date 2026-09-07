@@ -919,6 +919,8 @@ def draw():
     if game is None:
         return
 
+    pygame.mouse.set_visible(not fullscreen_mode)
+
     if fullscreen_mode:
         from pgzero import game as pgzero_game
         display_surface = screen.surface
