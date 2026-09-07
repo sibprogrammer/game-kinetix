@@ -1,3 +1,4 @@
+import os
 import pygame, pgzrun, math
 from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
@@ -880,6 +881,8 @@ def stop_music():
 
 def main():
     global keyboard_controls, joystick_controls, ai_controls, state, game, total_frames
+
+    os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
 
     try:
         pygame.mixer.quit()
