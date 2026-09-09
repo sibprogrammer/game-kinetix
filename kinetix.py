@@ -1,18 +1,19 @@
+import math
 import os
 import sys
-import pgzero.screen
-import pygame, pgzrun, math
 from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
-from random import random, randint, uniform, choice
+from random import choice, randint, random, uniform
 
+import pgzero.screen
+import pgzrun
+import pygame
 from pgzero import music
 from pgzero.actor import Actor
 from pgzero.keyboard import keyboard
 from pgzero.loaders import images, sounds
 from pygame import surface
 from pygame.locals import K_ESCAPE, K_RETURN
-from pygame.examples.grid import Game
 from pygame.math import Vector2
 
 screen: pgzero.screen.Screen
@@ -654,7 +655,7 @@ class Game:
         for y in range(self.num_rows):
             for x in range(self.num_cols):
                 self.redraw_brick(x, y)
-                if self.bricks[y][x] != None and self.bricks[y][x] != 13:
+                if self.bricks[y][x] is not None and self.bricks[y][x] != 13:
                     self.bricks_remaining += 1
 
         self.balls = [Ball()]
@@ -672,7 +673,7 @@ class Game:
     def redraw_brick(self, x, y):
         screen_x = x * BRICK_WIDTH + BRICKS_X_START
         screen_y = y * BRICK_HEIGHT + BRICKS_Y_START
-        if self.bricks[y][x] != None:
+        if self.bricks[y][x] is not None:
             brick_image = getattr(images, "brick" + hex(self.bricks[y][x])[2:])
             self.brick_surface.blit(brick_image, (screen_x, screen_y))
             self.shadow_surface.blit(images.bricks, (screen_x + SHADOW_OFFSET, screen_y + SHADOW_OFFSET))
@@ -697,7 +698,7 @@ class Game:
 
         for yb in range(y0, y1+1):
             for xb in range(x0, x1+1):
-                if self.bricks[yb][xb] != None:
+                if self.bricks[yb][xb] is not None:
                     c = brick_collide(x, y, xb, yb, r)
 
                     if c is not None:
