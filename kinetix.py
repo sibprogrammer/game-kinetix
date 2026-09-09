@@ -8,8 +8,9 @@ from random import random, randint, uniform, choice
 
 from pgzero import music
 from pgzero.actor import Actor
-from pgzero.keyboard import keyboard, keys
+from pgzero.keyboard import keyboard
 from pygame import surface
+from pygame.locals import K_ESCAPE, K_RETURN
 from pygame.examples.grid import Game
 from pygame.math import Vector2
 
@@ -973,9 +974,9 @@ def stop_music():
         pass
 
 def on_key_down(key):
-    if key == keys.ESCAPE:
+    if key == K_ESCAPE:
         sys.exit(0)
-    elif key == keys.RETURN and state == State.PLAY:
+    elif key == K_RETURN and state == State.PLAY:
         toggle_pause()
 
 def toggle_pause():
