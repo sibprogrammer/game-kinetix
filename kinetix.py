@@ -1,5 +1,6 @@
 import os
 import sys
+import pgzero.screen
 import pygame, pgzrun, math
 from abc import ABC, abstractmethod
 from enum import Enum, IntEnum
@@ -11,6 +12,8 @@ from pgzero.keyboard import keyboard, keys
 from pygame import surface
 from pygame.examples.grid import Game
 from pygame.math import Vector2
+
+screen: pgzero.screen.Screen
 
 WIDTH, HEIGHT = 640, 640
 TITLE = "Kinetix"
