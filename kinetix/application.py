@@ -51,7 +51,6 @@ def update():
         runtime.game = Game(ai_controls)
     total_frames += 1
     update_controls()
-    handle_joystick_back()
     if (
         state == State.PLAY
         and runtime.joystick_controls is not None
@@ -148,24 +147,19 @@ def toggle_pause():
 
 def on_key_down(key):
     if key == K_ESCAPE:
-        sys.exit(0)
+        if state == State.PLAY:
+            return_to_title()
+        else:
+            sys.exit(0)
     if key == K_RETURN and state == State.PLAY:
         toggle_pause()
 
 
-def handle_joystick_back():
+def return_to_title():
     global state, paused
-    if (
-        runtime.joystick_controls is None
-        or not runtime.joystick_controls.back_pressed()
-    ):
-        return
-    if state == State.PLAY:
-        runtime.game = Game(ai_controls)
-        state, paused = State.TITLE, False
-        play_music("title_theme")
-    elif state in (State.TITLE, State.GAME_OVER):
-        sys.exit(0)
+    runtime.game = Game(ai_controls)
+    state, paused = State.TITLE, False
+    play_music("title_theme")
 
 
 def initialize():

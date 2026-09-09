@@ -1,3 +1,6 @@
+import pygame
+from pygame._sdl2 import controller
+
 from .constants import BAT_SPEED
 from .controls_base import Controls
 
@@ -6,20 +9,14 @@ class JoystickControls(Controls):
     def __init__(self, joystick):
         super().__init__()
         self.joystick = joystick
-        self.back_previous_down = self.is_back_pressed = False
-        self.pause_previous_down = self.is_pause_pressed = False
         joystick.init()
+        controller.init()
+        self.controller = controller.Controller.from_joystick(joystick)
+        self.pause_previous_down = self.is_pause_pressed = False
 
     def update(self):
         super().update()
-        back_down = (
-            self.joystick.get_numbuttons() > 1 and self.joystick.get_button(1) != 0
-        )
-        self.is_back_pressed = back_down and not self.back_previous_down
-        self.back_previous_down = back_down
-        pause_down = (
-            self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2) != 0
-        )
+        pause_down = self.controller.get_button(pygame.CONTROLLER_BUTTON_START) != 0
         self.is_pause_pressed = pause_down and not self.pause_previous_down
         self.pause_previous_down = pause_down
 
@@ -38,9 +35,6 @@ class JoystickControls(Controls):
             print("Joystick has no buttons.")
             return False
         return self.joystick.get_button(0) != 0
-
-    def back_pressed(self):
-        return self.is_back_pressed
 
     def pause_pressed(self):
         return self.is_pause_pressed
