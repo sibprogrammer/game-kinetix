@@ -9,6 +9,7 @@ from random import random, randint, uniform, choice
 from pgzero import music
 from pgzero.actor import Actor
 from pgzero.keyboard import keyboard
+from pgzero.loaders import images, sounds
 from pygame import surface
 from pygame.locals import K_ESCAPE, K_RETURN
 from pygame.examples.grid import Game
