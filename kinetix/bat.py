@@ -50,7 +50,12 @@ class Bat(Actor):
             )
             runtime.game.play_sound("laser")
         new_x = self.x + self.controls.get_x()
-        if not runtime.game.portal_active:
+        if runtime.game.portal_active:
+            if self.portal_direction < 0:
+                new_x = min(self.max_x - self.width // 2, new_x)
+            else:
+                new_x = max(self.min_x + self.width // 2, new_x)
+        else:
             new_x = max(self.min_x + self.width // 2, new_x)
             new_x = min(self.max_x - self.width // 2, new_x)
         self.x = new_x
