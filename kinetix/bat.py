@@ -7,10 +7,19 @@ from .types import BatType
 
 
 class Bat(Actor):
-    def __init__(self, controls, x=320, y=590, min_x=BAT_MIN_X, max_x=BAT_MAX_X):
+    def __init__(
+        self,
+        controls,
+        x=320,
+        y=590,
+        min_x=BAT_MIN_X,
+        max_x=BAT_MAX_X,
+        portal_direction=1,
+    ):
         super().__init__("blank", (x, y), anchor=("center", 15))
         self.controls = controls
         self.min_x, self.max_x = min_x, max_x
+        self.portal_direction = portal_direction
         self.fire_timer = self.frame = 0
         self.current_type = self.target_type = BatType.NORMAL
         self.shadow = Actor("blank", (self.x + 16, self.y + 16), anchor=("center", 15))
@@ -40,8 +49,9 @@ class Bat(Actor):
                 (Bullet((self.x - 20, self.y), 0), Bullet((self.x + 20, self.y), 1))
             )
             runtime.game.play_sound("laser")
-        new_x = max(self.min_x + self.width // 2, self.x + self.controls.get_x())
+        new_x = self.x + self.controls.get_x()
         if not runtime.game.portal_active:
+            new_x = max(self.min_x + self.width // 2, new_x)
             new_x = min(self.max_x - self.width // 2, new_x)
         self.x = new_x
         self.shadow.pos = (self.x + 16, self.y + 16)
@@ -51,4 +61,6 @@ class Bat(Actor):
         self.target_type = bat_type
 
     def is_portal_transition_complete(self):
+        if self.portal_direction < 0:
+            return self.x + self.width // 2 <= 0
         return self.x - self.width // 2 >= WIDTH

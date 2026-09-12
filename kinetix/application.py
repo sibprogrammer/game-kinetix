@@ -5,7 +5,7 @@ import pgzero.screen
 import pygame
 from pgzero import music
 from pgzero.keyboard import keyboard
-from pygame.locals import K_ESCAPE, K_RETURN
+from pygame.locals import K_ESCAPE, K_RETURN, K_p
 
 from . import runtime
 from .constants import HEIGHT, WIDTH
@@ -150,6 +150,8 @@ def toggle_pause():
 
 
 def on_key_down(key):
+    if key == K_p and not fullscreen_mode and state == State.PLAY:
+        runtime.game.activate_portal()
     if key == K_ESCAPE:
         if state == State.PLAY:
             return_to_title()

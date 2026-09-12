@@ -95,7 +95,14 @@ class Game:
         else:
             half_width = WIDTH // 2
             self.bats = [
-                Bat(self.controls[0], half_width // 2, BAT_TOP_EDGE, BAT_MIN_X, half_width),
+                Bat(
+                    self.controls[0],
+                    half_width // 2,
+                    BAT_TOP_EDGE,
+                    BAT_MIN_X,
+                    half_width,
+                    -1,
+                ),
                 Bat(
                     self.controls[1],
                     half_width + half_width // 2,
@@ -225,7 +232,7 @@ class Game:
                         PORTAL_ANIMATION_SPEED,
                         self.portal_frame + 1,
                     )
-            elif all(bat.is_portal_transition_complete() for bat in self.bats):
+            elif any(bat.is_portal_transition_complete() for bat in self.bats):
                 self.new_level(self.level_num + 1)
         if self.detect_stuck_balls():
             changed = False
@@ -249,6 +256,8 @@ class Game:
     def draw(self, screen):
         screen.blit(f"arena{self.level_num % len(LEVELS)}", (0, 0))
         screen.blit(f"portal_exit{self.portal_frame}", (WIDTH - 90, HEIGHT - 70))
+        if len(self.bats) == 2:
+            screen.blit(f"portal_exit_left{self.portal_frame}", (20, HEIGHT - 70))
         screen.blit("portal_meanie00", (110, 40))
         screen.blit("portal_meanie10", (440, 40))
         screen.surface.set_clip((20, 42, 600, 598))
