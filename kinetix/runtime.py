@@ -1,3 +1,3 @@
 game = None
-joystick_controls = None
+joystick_controls = []
 screen = None

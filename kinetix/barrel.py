@@ -3,7 +3,7 @@ from random import choice
 from pgzero.actor import Actor
 
 from . import runtime
-from .constants import BALL_RADIUS, BAT_TOP_EDGE, HEIGHT, SHADOW_OFFSET
+from .constants import BALL_RADIUS, HEIGHT, SHADOW_OFFSET
 from .impact import Impact
 from .types import POWERUP_BAT_TYPES, POWERUP_SOUNDS, Powerup
 
@@ -32,17 +32,24 @@ class Barrel(Actor):
     def update(self):
         self.time += 1
         self.y += 1
-        width = (runtime.game.bat.width // 2) + BALL_RADIUS
-        if (
-            BAT_TOP_EDGE - 10 <= self.y <= BAT_TOP_EDGE + 30
-            and abs(self.x - runtime.game.bat.x) < width
-        ):
+        bat = next(
+            (
+                candidate
+                for candidate in runtime.game.bats
+                if candidate.y - 10 <= self.y <= candidate.y + 30
+                and abs(self.x - candidate.x)
+                < (candidate.width // 2) + BALL_RADIUS
+            ),
+            None,
+        )
+        if bat is not None:
             runtime.game.impacts.append(Impact((self.x, self.y - 11), 14))
             if self.type in POWERUP_SOUNDS:
                 runtime.game.play_sound(POWERUP_SOUNDS[self.type])
             self.y = HEIGHT + 100
             if self.type in POWERUP_BAT_TYPES:
-                runtime.game.bat.change_type(POWERUP_BAT_TYPES[self.type])
+                for player_bat in runtime.game.bats:
+                    player_bat.change_type(POWERUP_BAT_TYPES[self.type])
             elif self.type == Powerup.MULTI_BALL:
                 runtime.game.balls = [
                     new

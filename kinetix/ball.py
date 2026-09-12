@@ -12,7 +12,6 @@ from .constants import (
     BALL_SPEED_UP_INTERVAL,
     BALL_SPEED_UP_INTERVAL_FAST,
     BALL_START_SPEED,
-    BAT_TOP_EDGE,
 )
 from .impact import Impact
 from .types import BatType, CollisionType
@@ -26,11 +25,13 @@ class Ball(Actor):
         direction=Vector2(0, 0),
         stuck_to_bat=True,
         speed=BALL_START_SPEED,
+        bat=None,
     ):
         super().__init__("ball0", (0, 0))
         self.x, self.y, self.dir = x, y, Vector2(direction)
         self.stuck_to_bat = stuck_to_bat
         self.bat_offset, self.speed = BALL_INITIAL_OFFSET, speed
+        self.bat = bat
         self.speed_up_timer = self.time_since_touched_bat = (
             self.time_since_damaged_brick
         ) = 0
@@ -40,12 +41,12 @@ class Ball(Actor):
         self.time_since_damaged_brick += 1
         if self.stuck_to_bat:
             self.x, self.y = (
-                runtime.game.bat.x + self.bat_offset,
-                runtime.game.bat.y - BALL_RADIUS,
+                self.bat.x + self.bat_offset,
+                self.bat.y - BALL_RADIUS,
             )
-            if runtime.game.controls.fire_pressed():
+            if self.bat.controls.fire_pressed():
                 self.stuck_to_bat = False
-                _, self.dir = self.get_bat_bounce_vector()
+                _, self.dir = self.get_bat_bounce_vector(self.bat)
         else:
             self._move()
         self.shadow.pos = (self.x + 16, self.y + 16)
@@ -94,37 +95,41 @@ class Ball(Actor):
         self.collision_sound(collision[2])
 
     def _handle_bat_collision(self, previous_y):
-        if previous_y + BALL_RADIUS <= BAT_TOP_EDGE < self.y + BALL_RADIUS:
-            collided, direction = self.get_bat_bounce_vector()
-            if collided:
-                if runtime.game.bat.current_type == BatType.MAGNET:
-                    self.stuck_to_bat, self.bat_offset, self.dir = (
-                        True,
-                        self.x - runtime.game.bat.x,
-                        Vector2(0, 0),
-                    )
-                else:
-                    self.dir = direction
-                self.time_since_touched_bat = 0
-                runtime.game.impacts.append(Impact((self.x, self.y), 0xC))
-                self.collision_sound(CollisionType.BAT)
-        elif self.y + BALL_RADIUS > BAT_TOP_EDGE and self.y < BAT_TOP_EDGE + 15:
-            collided, _ = self.get_bat_bounce_vector()
-            if collided:
-                self.dir = Vector2(
-                    1 if self.x > runtime.game.bat.x else -1, uniform(-0.3, -0.1)
-                ).normalize()
-                self.time_since_touched_bat = 0
-                runtime.game.impacts.append(Impact((self.x, BAT_TOP_EDGE), 0xC))
-                self.speed = min(self.speed + 4, BALL_MAX_SPEED)
-                self.collision_sound(CollisionType.BAT_EDGE)
+        for bat in sorted(runtime.game.bats, key=lambda candidate: candidate.y):
+            if previous_y + BALL_RADIUS <= bat.y < self.y + BALL_RADIUS:
+                collided, direction = self.get_bat_bounce_vector(bat)
+                if collided:
+                    if bat.current_type == BatType.MAGNET:
+                        self.stuck_to_bat, self.bat_offset, self.dir, self.bat = (
+                            True,
+                            self.x - bat.x,
+                            Vector2(0, 0),
+                            bat,
+                        )
+                    else:
+                        self.dir = direction
+                    self.time_since_touched_bat = 0
+                    runtime.game.impacts.append(Impact((self.x, self.y), 0xC))
+                    self.collision_sound(CollisionType.BAT, bat)
+                    return
+            elif self.y + BALL_RADIUS > bat.y and self.y < bat.y + 15:
+                collided, _ = self.get_bat_bounce_vector(bat)
+                if collided:
+                    self.dir = Vector2(
+                        1 if self.x > bat.x else -1, uniform(-0.3, -0.1)
+                    ).normalize()
+                    self.time_since_touched_bat = 0
+                    runtime.game.impacts.append(Impact((self.x, bat.y), 0xC))
+                    self.speed = min(self.speed + 4, BALL_MAX_SPEED)
+                    self.collision_sound(CollisionType.BAT_EDGE, bat)
+                    return
 
     def increment_speed(self):
         self.speed = min(self.speed + 1, BALL_MAX_SPEED)
 
-    def get_bat_bounce_vector(self):
-        dx = self.x - runtime.game.bat.x
-        width = runtime.game.bat.width // 2 + BALL_RADIUS
+    def get_bat_bounce_vector(self, bat):
+        dx = self.x - bat.x
+        width = bat.width // 2 + BALL_RADIUS
         return (
             (True, Vector2(dx / width, -0.5).normalize())
             if abs(dx) < width
@@ -137,11 +142,11 @@ class Ball(Actor):
             direction = self.dir.rotate(index * 120)
             if abs(direction.y) < 0.15:
                 direction = Vector2(uniform(-1, 1), -1).normalize()
-            balls.append(Ball(self.x, self.y, direction, False, self.speed))
+            balls.append(Ball(self.x, self.y, direction, False, self.speed, self.bat))
         return balls
 
     @staticmethod
-    def collision_sound(collision_type):
+    def collision_sound(collision_type, bat=None):
         sounds = {
             CollisionType.BRICK: "hit_brick",
             CollisionType.INDESTRUCTIBLE_BRICK: "hit_brick",
@@ -150,7 +155,7 @@ class Ball(Actor):
         if collision_type in sounds:
             runtime.game.play_sound(sounds[collision_type])
         elif collision_type in (CollisionType.BAT, CollisionType.BAT_EDGE):
-            if runtime.game.bat.current_type == BatType.MAGNET:
+            if bat is not None and bat.current_type == BatType.MAGNET:
                 runtime.game.play_sound("ball_stick")
             else:
                 runtime.game.play_sound(

@@ -30,6 +30,16 @@ class JoystickControls(Controls):
         axis_value = self.joystick.get_axis(0)
         return 0 if abs(axis_value) <= 0.2 else axis_value * BAT_SPEED
 
+    def get_y(self):
+        if self.joystick.get_numhats() > 0:
+            hat_y = self.joystick.get_hat(0)[1]
+            if hat_y != 0:
+                return -hat_y * BAT_SPEED
+        if self.joystick.get_numaxes() <= 1:
+            return 0
+        axis_value = self.joystick.get_axis(1)
+        return 0 if abs(axis_value) <= 0.2 else axis_value * BAT_SPEED
+
     def fire_down(self):
         if self.joystick.get_numbuttons() <= 0:
             print("Joystick has no buttons.")

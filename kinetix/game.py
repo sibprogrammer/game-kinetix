@@ -13,6 +13,9 @@ from .constants import (
     BALL_MAX_SPEED,
     BALL_MIN_SPEED,
     BALL_RADIUS,
+    BAT_MAX_X,
+    BAT_MIN_X,
+    BAT_TOP_EDGE,
     BRICK_HEIGHT,
     BRICK_WIDTH,
     BRICKS_X_START,
@@ -59,8 +62,14 @@ def brick_collide(x, y, grid_x, grid_y, radius):
 
 class Game:
     def __init__(self, controls=None, lives=3):
-        self.controls = controls if controls else AIControls()
+        if controls is None:
+            self.controls = (AIControls(),)
+        elif isinstance(controls, tuple):
+            self.controls = controls
+        else:
+            self.controls = (controls,)
         self.lives, self.score = lives, 0
+        self.next_bat_index = randint(0, len(self.controls) - 1)
         self.new_level(0)
 
     def new_level(self, level_num):
@@ -81,7 +90,22 @@ class Game:
                 self.redraw_brick(x, y)
                 if self.bricks[y][x] is not None and self.bricks[y][x] != 13:
                     self.bricks_remaining += 1
-        self.balls, self.bat = [Ball()], Bat(self.controls)
+        if len(self.controls) == 1:
+            self.bats = [Bat(self.controls[0])]
+        else:
+            half_width = WIDTH // 2
+            self.bats = [
+                Bat(self.controls[0], half_width // 2, BAT_TOP_EDGE, BAT_MIN_X, half_width),
+                Bat(
+                    self.controls[1],
+                    half_width + half_width // 2,
+                    BAT_TOP_EDGE,
+                    half_width,
+                    BAT_MAX_X,
+                ),
+            ]
+        self.bat = self.bats[0]
+        self.balls = [Ball(bat=self.bats[self.next_bat_index])]
         self.bullets, self.barrels, self.impacts = [], [], []
         self.level_num, self.portal_active, self.portal_frame, self.portal_timer = (
             level_num,
@@ -177,13 +201,16 @@ class Game:
         self.play_sound("portal_exit")
 
     def update(self):
-        for obj in [self.bat] + self.balls:
+        for obj in self.bats + self.balls:
             obj.update()
         self.balls = [ball for ball in self.balls if ball.y < HEIGHT]
         if not self.balls:
             if self.lives > 0 or self.in_demo_mode():
                 self.lives -= 1
-                self.balls, self.bat.target_type = [Ball()], BatType.NORMAL
+                for bat in self.bats:
+                    bat.target_type = BatType.NORMAL
+                self.next_bat_index = (self.next_bat_index + 1) % len(self.bats)
+                self.balls = [Ball(bat=self.bats[self.next_bat_index])]
             self.play_sound("lose_life")
         for obj in self.impacts + self.barrels + self.bullets:
             obj.update()
@@ -198,7 +225,7 @@ class Game:
                         PORTAL_ANIMATION_SPEED,
                         self.portal_frame + 1,
                     )
-            elif self.bat.is_portal_transition_complete():
+            elif all(bat.is_portal_transition_complete() for bat in self.bats):
                 self.new_level(self.level_num + 1)
         if self.detect_stuck_balls():
             changed = False
@@ -226,10 +253,10 @@ class Game:
         screen.blit("portal_meanie10", (440, 40))
         screen.surface.set_clip((20, 42, 600, 598))
         screen.blit(self.shadow_surface, (0, 0))
-        for obj in self.barrels + self.balls + [self.bat]:
+        for obj in self.barrels + self.balls + self.bats:
             obj.shadow.draw()
         screen.blit(self.brick_surface, (0, 0))
-        for obj in self.balls + [self.bat] + self.barrels + self.bullets:
+        for obj in self.balls + self.bats + self.barrels + self.bullets:
             obj.draw()
         screen.surface.set_clip(None)
         for impact in self.impacts:
@@ -252,4 +279,4 @@ class Game:
             ball.speed = min(max(ball.speed + change, BALL_MIN_SPEED), BALL_MAX_SPEED)
 
     def in_demo_mode(self):
-        return isinstance(self.controls, AIControls)
+        return all(isinstance(controls, AIControls) for controls in self.controls)

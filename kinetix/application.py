@@ -4,6 +4,7 @@ import sys
 import pgzero.screen
 import pygame
 from pgzero import music
+from pgzero.keyboard import keyboard
 from pygame.locals import K_ESCAPE, K_RETURN
 
 from . import runtime
@@ -14,58 +15,61 @@ from .types import State
 
 fullscreen_mode = True
 keyboard_controls = KeyboardControls()
-player_controls = PlayerControls(keyboard_controls)
+second_keyboard_controls = KeyboardControls("a", "d", "s")
+player_controls = ()
 ai_controls = AIControls()
 state = State.TITLE
 total_frames = 0
 paused = False
+num_players = 1
 
 
-def get_joystick_if_exists():
+def setup_joystick_controls():
     try:
         pygame.joystick.init()
     except Exception:
         pass
-    return pygame.joystick.Joystick(0) if pygame.joystick.get_count() > 0 else None
-
-
-def setup_joystick_controls():
-    joystick = get_joystick_if_exists()
-    runtime.joystick_controls = (
-        JoystickControls(joystick) if joystick is not None else None
-    )
+    runtime.joystick_controls = [
+        JoystickControls(pygame.joystick.Joystick(index))
+        for index in range(min(2, pygame.joystick.get_count()))
+    ]
 
 
 def update_controls():
     keyboard_controls.update()
-    if runtime.joystick_controls is None:
-        setup_joystick_controls()
-    if runtime.joystick_controls is not None:
-        runtime.joystick_controls.update()
-    player_controls.update()
+    second_keyboard_controls.update()
+    for controls in runtime.joystick_controls:
+        controls.update()
+    for controls in player_controls:
+        controls.update()
 
 
 def update():
-    global state, total_frames, paused
+    global state, total_frames, paused, num_players
     if runtime.game is None:
         runtime.game = Game(ai_controls)
     total_frames += 1
     update_controls()
     if (
         state == State.PLAY
-        and runtime.joystick_controls is not None
-        and runtime.joystick_controls.pause_pressed()
+        and any(controls.pause_pressed() for controls in runtime.joystick_controls)
     ):
         toggle_pause()
     if state == State.TITLE:
         ai_controls.update()
         runtime.game.update()
-        for controls in (keyboard_controls, runtime.joystick_controls):
-            if controls is not None and controls.fire_pressed():
-                runtime.game = Game(player_controls)
-                state, paused = State.PLAY, False
-                stop_music()
-                break
+        if keyboard.up or any(
+            controls.get_y() < -4 for controls in runtime.joystick_controls
+        ):
+            num_players = 1
+        elif keyboard.down or any(
+            controls.get_y() > 4 for controls in runtime.joystick_controls
+        ):
+            num_players = 2
+        if any(controls.fire_pressed() for controls in player_controls[:num_players]):
+            runtime.game = Game(player_controls[:num_players])
+            state, paused = State.PLAY, False
+            stop_music()
     elif state == State.PLAY:
         if not paused:
             if runtime.game.lives > 0:
@@ -74,18 +78,18 @@ def update():
                 runtime.game.play_sound("game_over")
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
-        for controls in (keyboard_controls, runtime.joystick_controls):
-            if controls is not None and controls.fire_pressed():
-                runtime.game = Game(ai_controls)
-                state = State.TITLE
-                play_music("title_theme")
+        if any(controls.fire_pressed() for controls in player_controls[:num_players]):
+            runtime.game = Game(ai_controls)
+            state = State.TITLE
+            play_music("title_theme")
 
 
 def draw_overlay(screen):
     if state == State.TITLE:
         screen.blit("title", (0, 0))
-        screen.blit("startgame", (20, 80))
-        screen.blit(f"start{total_frames // 4 % 13}", (WIDTH // 2 - 125, 530))
+
+        menu_image = f'menu{num_players - 1}'
+        screen.blit(menu_image, (0, 220))
     elif state == State.GAME_OVER:
         screen.blit(f"gameover{total_frames // 4 % 15}", (WIDTH // 2 - 225, 450))
     if paused:
@@ -166,11 +170,13 @@ def initialize():
     global \
         fullscreen_mode, \
         keyboard_controls, \
+        second_keyboard_controls, \
         player_controls, \
         ai_controls, \
         state, \
         total_frames, \
-        paused
+        paused, \
+        num_players
     fullscreen_mode = "--debug" not in sys.argv
     if fullscreen_mode:
         from pgzero import game as pgzero_game
@@ -185,7 +191,28 @@ def initialize():
         music.set_volume(0.3)
     except Exception:
         pass
-    keyboard_controls = KeyboardControls()
+    keyboard_controls, second_keyboard_controls = (
+        KeyboardControls(),
+        KeyboardControls("a", "d", "s"),
+    )
     setup_joystick_controls()
-    player_controls, ai_controls = PlayerControls(keyboard_controls), AIControls()
-    state, runtime.game, total_frames, paused = State.TITLE, None, 0, False
+    player_controls = (
+        PlayerControls(
+            keyboard_controls,
+            runtime.joystick_controls[0] if runtime.joystick_controls else None,
+        ),
+        PlayerControls(
+            second_keyboard_controls,
+            runtime.joystick_controls[1]
+            if len(runtime.joystick_controls) > 1
+            else None,
+        ),
+    )
+    ai_controls = AIControls()
+    state, runtime.game, total_frames, paused, num_players = (
+        State.TITLE,
+        None,
+        0,
+        False,
+        1,
+    )
