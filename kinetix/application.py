@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 import pygame
-from pygame.locals import K_ESCAPE, K_RETURN, K_p
+from pygame.locals import K_ESCAPE, K_RETURN, K_f, K_p
 
 from . import runtime
 from .assets import image
@@ -21,6 +21,8 @@ state = State.TITLE
 total_frames = 0
 paused = False
 num_players = 1
+show_fps = False
+fps = 0.0
 ROOT = Path(__file__).parent.parent
 
 
@@ -92,6 +94,9 @@ def draw_overlay(screen):
     if paused:
         text = pygame.font.Font(None, 48).render("PAUSED", True, "white")
         screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+    if show_fps:
+        text = pygame.font.Font(None, 24).render(f"FPS: {fps:.1f}", True, "white")
+        screen.blit(text, text.get_rect(topright=(WIDTH - 10, 10)))
 
 
 def draw():
@@ -136,6 +141,9 @@ def toggle_pause():
 
 
 def on_key_down(key):
+    global show_fps
+    if key == K_f and not fullscreen_mode:
+        show_fps = not show_fps
     if key == K_p and not fullscreen_mode and state == State.PLAY:
         runtime.game.activate_portal()
     if key == K_ESCAPE:
@@ -164,7 +172,9 @@ def initialize():
         state, \
         total_frames, \
         paused, \
-        num_players
+        num_players, \
+        show_fps, \
+        fps
     fullscreen_mode = "--debug" not in sys.argv
     pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=1024)
     pygame.init()
@@ -194,19 +204,24 @@ def initialize():
         ),
     )
     ai_controls = AIControls()
-    state, runtime.game, total_frames, paused, num_players = (
+    state, runtime.game, total_frames, paused, num_players, show_fps, fps = (
         State.TITLE,
         None,
         0,
         False,
         1,
+        False,
+        0.0,
     )
     runtime.running = True
 
 
 def run():
+    global fps
     clock = pygame.time.Clock()
     while runtime.running:
+        clock.tick(60)
+        fps = clock.get_fps()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 runtime.running = False
@@ -215,5 +230,4 @@ def run():
         update()
         draw()
         pygame.display.flip()
-        clock.tick(60)
     pygame.quit()
