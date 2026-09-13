@@ -184,6 +184,7 @@ def initialize():
         os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
         runtime.screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Kinetix")
+    pygame.display.set_icon(image("app_icon"))
     play_music("title_theme")
     pygame.mixer.music.set_volume(0.3)
     keyboard_controls, second_keyboard_controls = (
