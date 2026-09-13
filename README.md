@@ -38,6 +38,12 @@ uv run main.py
 
 The game starts in fullscreen mode. Run `uv run main.py --debug` for a windowed display.
 
+## Levels
+
+Levels are editable [Tiled](https://www.mapeditor.org/) TMX maps in `levels/`. Each map uses the shared
+`bricks.tsx` tileset and its `Bricks` tile layer; empty cells use tile ID `0`, and brick tiles use IDs `1` through `14`
+to correspond to `brick0.png` through `brickd.png`.
+
 ## Credits
 
 Kinetix is based on the original work from the

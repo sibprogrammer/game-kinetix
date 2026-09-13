@@ -31,7 +31,7 @@ from .constants import (
 )
 from .controls import AIControls
 from .impact import Impact
-from .levels import LEVELS, get_mirrored_level
+from .levels import LEVELS
 from .types import BatType, CollisionType
 
 
@@ -79,11 +79,9 @@ class Game:
         self.brick_surface.fill((0, 0, 0, 0))
         self.shadow_surface = surface.Surface((WIDTH, HEIGHT), flags=pygame.SRCALPHA)
         self.shadow_surface.fill((0, 0, 0, 0))
-        level = get_mirrored_level(LEVELS[level_num])
+        level = LEVELS[level_num]
         self.num_rows, self.num_cols = len(level), len(level[0])
-        self.bricks = [
-            [None if value == " " else int(value, 16) for value in row] for row in level
-        ]
+        self.bricks = [row.copy() for row in level]
         self.bricks_remaining = 0
         for y in range(self.num_rows):
             for x in range(self.num_cols):
