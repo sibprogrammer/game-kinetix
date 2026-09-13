@@ -1,8 +1,7 @@
 from random import choice
 
-from pgzero.actor import Actor
-
 from . import runtime
+from .actor import Actor
 from .constants import BALL_RADIUS, HEIGHT, SHADOW_OFFSET
 from .impact import Impact
 from .types import POWERUP_BAT_TYPES, POWERUP_SOUNDS, Powerup

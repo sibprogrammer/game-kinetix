@@ -1,4 +1,4 @@
-from pgzero.actor import Actor
+from .actor import Actor
 
 
 class Impact(Actor):

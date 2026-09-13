@@ -1,13 +1,12 @@
 import os
 import sys
+from pathlib import Path
 
-import pgzero.screen
 import pygame
-from pgzero import music
-from pgzero.keyboard import keyboard
 from pygame.locals import K_ESCAPE, K_RETURN, K_p
 
 from . import runtime
+from .assets import image
 from .constants import HEIGHT, WIDTH
 from .controls import AIControls, JoystickControls, KeyboardControls, PlayerControls
 from .game import Game
@@ -22,13 +21,11 @@ state = State.TITLE
 total_frames = 0
 paused = False
 num_players = 1
+ROOT = Path(__file__).parent.parent
 
 
 def setup_joystick_controls():
-    try:
-        pygame.joystick.init()
-    except Exception:
-        pass
+    pygame.joystick.init()
     runtime.joystick_controls = [
         JoystickControls(pygame.joystick.Joystick(index))
         for index in range(min(2, pygame.joystick.get_count()))
@@ -58,11 +55,12 @@ def update():
     if state == State.TITLE:
         ai_controls.update()
         runtime.game.update()
-        if keyboard.up or any(
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP] or any(
             controls.get_y() < -4 for controls in runtime.joystick_controls
         ):
             num_players = 1
-        elif keyboard.down or any(
+        elif keys[pygame.K_DOWN] or any(
             controls.get_y() > 4 for controls in runtime.joystick_controls
         ):
             num_players = 2
@@ -86,67 +84,55 @@ def update():
 
 def draw_overlay(screen):
     if state == State.TITLE:
-        screen.blit("title", (0, 0))
-
+        screen.blit(image("title"), (0, 0))
         menu_image = f'menu{num_players - 1}'
-        screen.blit(menu_image, (0, 220))
+        screen.blit(image(menu_image), (0, 220))
     elif state == State.GAME_OVER:
-        screen.blit(f"gameover{total_frames // 4 % 15}", (WIDTH // 2 - 225, 450))
+        screen.blit(image(f"gameover{total_frames // 4 % 15}"), (WIDTH // 2 - 225, 450))
     if paused:
-        screen.draw.text(
-            "PAUSED", center=(WIDTH // 2, HEIGHT // 2), fontsize=48, color="white"
-        )
+        text = pygame.font.Font(None, 48).render("PAUSED", True, "white")
+        screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
 
 
 def draw():
     if runtime.game is None:
         return
-
-    from pgzero import game as pgzero_game
-
-    screen = pgzero.screen.Screen(pgzero_game.screen)
     pygame.mouse.set_visible(not fullscreen_mode)
     if not fullscreen_mode:
-        runtime.game.draw(screen)
-        draw_overlay(screen)
+        runtime.game.draw(runtime.screen)
+        draw_overlay(runtime.screen)
         return
-    display_surface, actor_surface = screen.surface, pgzero_game.screen
     field_surface = pygame.Surface((WIDTH, HEIGHT))
-    screen.surface = pgzero_game.screen = field_surface
-    runtime.game.draw(screen)
-    draw_overlay(screen)
-    screen.surface, pgzero_game.screen = display_surface, actor_surface
-    display_surface.fill((0, 0, 0))
-    display_surface.blit(
-        field_surface,
+    runtime.game.draw(field_surface)
+    draw_overlay(field_surface)
+    runtime.screen.fill((0, 0, 0))
+    field_size = runtime.screen.get_height()
+    scaled_field = pygame.transform.smoothscale(field_surface, (field_size, field_size))
+    runtime.screen.blit(
+        scaled_field,
         (
-            (display_surface.get_width() - WIDTH) // 2,
-            (display_surface.get_height() - HEIGHT) // 2,
+            (runtime.screen.get_width() - field_size) // 2,
+            0,
         ),
     )
 
 
 def play_music(name):
-    try:
-        music.play(name)
-    except Exception:
-        pass
+    pygame.mixer.music.load(ROOT / "music" / f"{name}.ogg")
+    pygame.mixer.music.play(-1)
 
 
 def stop_music():
-    try:
-        music.stop()
-    except Exception:
-        pass
+    pygame.mixer.music.stop()
 
 
 def toggle_pause():
     global paused
     paused = not paused
     if paused:
-        music.pause()
+        pygame.mixer.music.pause()
     else:
-        music.unpause()
+        pygame.mixer.music.unpause()
 
 
 def on_key_down(key):
@@ -156,7 +142,7 @@ def on_key_down(key):
         if state == State.PLAY:
             return_to_title()
         else:
-            sys.exit(0)
+            runtime.running = False
     if key == K_RETURN and state == State.PLAY:
         toggle_pause()
 
@@ -180,19 +166,16 @@ def initialize():
         paused, \
         num_players
     fullscreen_mode = "--debug" not in sys.argv
+    pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=1024)
+    pygame.init()
     if fullscreen_mode:
-        from pgzero import game as pgzero_game
-
-        pgzero_game.DISPLAY_FLAGS |= pygame.FULLSCREEN
+        runtime.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
         os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
-    try:
-        pygame.mixer.quit()
-        pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
-        play_music("title_theme")
-        music.set_volume(0.3)
-    except Exception:
-        pass
+        runtime.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Kinetix")
+    play_music("title_theme")
+    pygame.mixer.music.set_volume(0.3)
     keyboard_controls, second_keyboard_controls = (
         KeyboardControls(),
         KeyboardControls("a", "d", "s"),
@@ -218,3 +201,19 @@ def initialize():
         False,
         1,
     )
+    runtime.running = True
+
+
+def run():
+    clock = pygame.time.Clock()
+    while runtime.running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                runtime.running = False
+            elif event.type == pygame.KEYDOWN:
+                on_key_down(event.key)
+        update()
+        draw()
+        pygame.display.flip()
+        clock.tick(60)
+    pygame.quit()

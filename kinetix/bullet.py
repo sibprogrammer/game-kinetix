@@ -1,7 +1,7 @@
-from pgzero.actor import Actor
 from pygame.math import Vector2
 
 from . import runtime
+from .actor import Actor
 from .constants import BULLET_SPEED
 from .impact import Impact
 from .types import CollisionType

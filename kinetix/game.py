@@ -2,10 +2,10 @@ import math
 from random import randint, random
 
 import pygame
-from pgzero.loaders import images, sounds
 from pygame import surface
 from pygame.math import Vector2
 
+from .assets import image, sound
 from .ball import Ball
 from .barrel import Barrel
 from .bat import Bat
@@ -128,11 +128,11 @@ class Game:
         )
         if self.bricks[y][x] is not None:
             self.brick_surface.blit(
-                getattr(images, "brick" + hex(self.bricks[y][x])[2:]),
+                image("brick" + hex(self.bricks[y][x])[2:]),
                 (screen_x, screen_y),
             )
             self.shadow_surface.blit(
-                images.bricks, (screen_x + SHADOW_OFFSET, screen_y + SHADOW_OFFSET)
+                image("bricks"), (screen_x + SHADOW_OFFSET, screen_y + SHADOW_OFFSET)
             )
         else:
             self.brick_surface.fill(
@@ -254,32 +254,32 @@ class Game:
         )
 
     def draw(self, screen):
-        screen.blit(f"arena{self.level_num % len(LEVELS)}", (0, 0))
-        screen.blit(f"portal_exit{self.portal_frame}", (WIDTH - 90, HEIGHT - 70))
+        screen.blit(image(f"arena{self.level_num % len(LEVELS)}"), (0, 0))
+        screen.blit(image(f"portal_exit{self.portal_frame}"), (WIDTH - 90, HEIGHT - 70))
         if len(self.bats) == 2:
-            screen.blit(f"portal_exit_left{self.portal_frame}", (20, HEIGHT - 70))
-        screen.blit("portal_meanie00", (110, 40))
-        screen.blit("portal_meanie10", (440, 40))
-        screen.surface.set_clip((20, 42, 600, 598))
+            screen.blit(image(f"portal_exit_left{self.portal_frame}"), (20, HEIGHT - 70))
+        screen.blit(image("portal_meanie00"), (110, 40))
+        screen.blit(image("portal_meanie10"), (440, 40))
+        screen.set_clip((20, 42, 600, 598))
         screen.blit(self.shadow_surface, (0, 0))
         for obj in self.barrels + self.balls + self.bats:
-            obj.shadow.draw()
+            obj.shadow.draw(screen)
         screen.blit(self.brick_surface, (0, 0))
         for obj in self.balls + self.bats + self.barrels + self.bullets:
-            obj.draw()
-        screen.surface.set_clip(None)
+            obj.draw(screen)
+        screen.set_clip(None)
         for impact in self.impacts:
-            impact.draw()
+            impact.draw(screen)
         if not self.in_demo_mode():
             for index, digit in enumerate(str(self.score)):
-                screen.blit("digit" + digit, (15 + index * 55, 50))
+                screen.blit(image("digit" + digit), (15 + index * 55, 50))
             for index in range(self.lives):
-                screen.blit("life", (index * 50, HEIGHT - 20))
+                screen.blit(image("life"), (index * 50, HEIGHT - 20))
 
     def play_sound(self, name, count=1):
         if not self.in_demo_mode():
             try:
-                getattr(sounds, name + str(randint(0, count - 1))).play()
+                sound(name + str(randint(0, count - 1))).play()
             except Exception as error:
                 print(error)
 

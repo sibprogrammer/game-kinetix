@@ -1,9 +1,9 @@
 from random import uniform
 
-from pgzero.actor import Actor
 from pygame.math import Vector2
 
 from . import runtime
+from .actor import Actor
 from .constants import (
     BALL_FAST_SPEED_THRESHOLD,
     BALL_INITIAL_OFFSET,

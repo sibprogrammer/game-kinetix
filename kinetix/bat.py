@@ -1,6 +1,5 @@
-from pgzero.actor import Actor
-
 from . import runtime
+from .actor import Actor
 from .bullet import Bullet
 from .constants import BAT_MAX_X, BAT_MIN_X, FIRE_INTERVAL, WIDTH
 from .types import BatType
