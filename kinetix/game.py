@@ -278,7 +278,7 @@ class Game:
         if not self.in_demo_mode():
             try:
                 sound(name + str(randint(0, count - 1))).play()
-            except Exception as error:
+            except pygame.error as error:
                 print(error)
 
     def change_all_ball_speeds(self, change):

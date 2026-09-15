@@ -22,13 +22,17 @@ class Ball(Actor):
         self,
         x=0,
         y=0,
-        direction=Vector2(0, 0),
+        direction=None,
         stuck_to_bat=True,
         speed=BALL_START_SPEED,
         bat=None,
     ):
         super().__init__("ball0", (0, 0))
-        self.x, self.y, self.dir = x, y, Vector2(direction)
+        self.x, self.y, self.dir = (
+            x,
+            y,
+            Vector2(0, 0) if direction is None else Vector2(direction),
+        )
         self.stuck_to_bat = stuck_to_bat
         self.bat_offset, self.speed = BALL_INITIAL_OFFSET, speed
         self.bat = bat
