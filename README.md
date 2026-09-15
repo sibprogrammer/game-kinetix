@@ -38,6 +38,14 @@ uv run main.py
 
 The game starts in fullscreen mode. Run `uv run main.py --debug` for a windowed display.
 
+## Tests
+
+Run the test suite with:
+
+```sh
+uv run pytest
+```
+
 ## Levels
 
 Levels are editable [Tiled](https://www.mapeditor.org/) TMX maps in `levels/`. Each map uses the shared
