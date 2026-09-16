@@ -70,7 +70,7 @@ class Game:
             self.controls = (controls,)
         self.lives, self.score = lives, 0
         self.next_bat_index = randint(0, len(self.controls) - 1)
-        self.new_level(0)
+        self.new_level(randint(0, len(LEVELS) - 1))
 
     def new_level(self, level_num):
         self.play_sound("start_game")
