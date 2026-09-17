@@ -1,8 +1,6 @@
 from pathlib import Path
 
-import pytest
-
-from kinetix.levels import LEVELS, _load_level, _natural_sort_key
+from kinetix.levels import LEVELS, _natural_sort_key
 
 
 def test_levels_are_rectangular_and_use_supported_bricks():
