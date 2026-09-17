@@ -1,0 +1,13 @@
+version: 2
+
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "TECH Dependabot [python] "
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
