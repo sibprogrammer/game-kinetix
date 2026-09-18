@@ -18,6 +18,7 @@ collect power-ups, and enter the portal to advance.
 
 | Action | Player 1 | Player 2 |
 | --- | --- | --- |
+| Bat | Right | Left |
 | Move left | Left Arrow | A |
 | Move right | Right Arrow | D |
 | Fire / select | Space | S |

@@ -94,7 +94,7 @@ class Game:
             half_width = WIDTH // 2
             self.bats = [
                 Bat(
-                    self.controls[0],
+                    self.controls[1],
                     half_width // 2,
                     BAT_TOP_EDGE,
                     BAT_MIN_X,
@@ -102,7 +102,7 @@ class Game:
                     -1,
                 ),
                 Bat(
-                    self.controls[1],
+                    self.controls[0],
                     half_width + half_width // 2,
                     BAT_TOP_EDGE,
                     half_width,
