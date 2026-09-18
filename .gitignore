@@ -11,3 +11,6 @@ wheels/
 
 # Tiled editor
 *.tiled-session
+
+# High scores
+/scores

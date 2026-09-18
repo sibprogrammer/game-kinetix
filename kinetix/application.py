@@ -3,13 +3,15 @@ import sys
 from pathlib import Path
 
 import pygame
-from pygame.locals import K_ESCAPE, K_RETURN, K_f, K_p
+from pygame.locals import K_ESCAPE, K_RETURN, K_f, K_g, K_p
 
 from . import runtime
 from .assets import image
 from .constants import HEIGHT, WIDTH
 from .controls import AIControls, JoystickControls, KeyboardControls, PlayerControls
 from .game import Game
+from .high_scores import record as record_high_score
+from .high_scores import top as top_high_scores
 from .types import State
 
 fullscreen_mode = True
@@ -76,6 +78,7 @@ def update():
                 runtime.game.update()
             else:
                 runtime.game.play_sound("game_over")
+                record_high_score(runtime.game.score)
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
@@ -91,6 +94,29 @@ def draw_overlay(screen):
         screen.blit(image(menu_image), (0, 220))
     elif state == State.GAME_OVER:
         screen.blit(image(f"gameover{total_frames // 4 % 15}"), (WIDTH // 2 - 225, 450))
+        font = pygame.font.Font(None, 32)
+        title_shadow = font.render("HIGH SCORES", True, "black")
+        screen.blit(title_shadow, title_shadow.get_rect(center=(WIDTH // 2 + 2, 102)))
+        title = font.render("HIGH SCORES", True, "white")
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
+        score_font = pygame.font.SysFont("monospace", 32)
+        scores = top_high_scores()
+        current_score = runtime.game.score if runtime.game is not None else None
+        current_score_position = (
+            scores.index(current_score) + 1 if current_score in scores else None
+        )
+        current_score_color = "yellow" if total_frames // 15 % 2 == 0 else "white"
+        for position, score in enumerate(scores, start=1):
+            score_text = f"{position:02d} - {score:05d}"
+            shadow = score_font.render(score_text, True, "black")
+            screen.blit(
+                shadow, shadow.get_rect(center=(WIDTH // 2 + 2, 117 + position * 28))
+            )
+            color = (
+                current_score_color if position == current_score_position else "white"
+            )
+            text = score_font.render(score_text, True, color)
+            screen.blit(text, text.get_rect(center=(WIDTH // 2, 115 + position * 28)))
     if paused:
         text = pygame.font.Font(None, 48).render("PAUSED", True, "white")
         screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
@@ -141,9 +167,11 @@ def toggle_pause():
 
 
 def on_key_down(key):
-    global show_fps
+    global paused, show_fps, state
     if key == K_f and not fullscreen_mode:
         show_fps = not show_fps
+    if key == K_g and not fullscreen_mode:
+        state, paused = State.GAME_OVER, False
     if key == K_p and not fullscreen_mode and state == State.PLAY:
         runtime.game.activate_portal()
     if key == K_ESCAPE:
