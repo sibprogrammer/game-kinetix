@@ -34,6 +34,8 @@ from .impact import Impact
 from .levels import LEVELS
 from .types import BatType, CollisionType
 
+ARENA_COUNT = 7
+
 
 def brick_collide(x, y, grid_x, grid_y, radius):
     x0, y0, x1, y1 = x - radius, y - radius, x + radius, y + radius
@@ -75,6 +77,7 @@ class Game:
     def new_level(self, level_num):
         self.play_sound("start_game")
         level_num %= len(LEVELS)
+        self.background_index = randint(0, ARENA_COUNT - 1)
         self.brick_surface = surface.Surface((WIDTH, HEIGHT), flags=pygame.SRCALPHA)
         self.brick_surface.fill((0, 0, 0, 0))
         self.shadow_surface = surface.Surface((WIDTH, HEIGHT), flags=pygame.SRCALPHA)
@@ -252,7 +255,7 @@ class Game:
         )
 
     def draw(self, screen):
-        screen.blit(image(f"arena{self.level_num % len(LEVELS)}"), (0, 0))
+        screen.blit(image(f"arena{self.background_index}"), (0, 0))
         screen.blit(image(f"portal_exit{self.portal_frame}"), (WIDTH - 90, HEIGHT - 70))
         if len(self.bats) == 2:
             screen.blit(image(f"portal_exit_left{self.portal_frame}"), (20, HEIGHT - 70))
