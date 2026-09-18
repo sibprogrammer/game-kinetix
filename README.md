@@ -1,6 +1,6 @@
 # Kinetix
 
-[![test](https://github.com/sibprogrammer/game-kinetix/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/sibprogrammer/game-kinetix/actions/workflows/test.yml)
+[![test](https://github.com/sibprogrammer/game-kinetix/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/sibprogrammer/game-kinetix/actions/workflows/test.yml)
 
 Kinetix is a fast-paced brick-breaking arcade game. Control a bat, keep the ball in play, clear each level of bricks,
 collect power-ups, and enter the portal to advance.
