@@ -41,6 +41,17 @@ uv run main.py
 
 The game starts in fullscreen mode. Run `uv run main.py --debug` for a windowed display.
 
+## Build macOS DMG
+
+On macOS, create a local application bundle and DMG with:
+
+```sh
+./build.sh
+```
+
+The artifact is written to `dist/Kinetix-local.dmg`. Pass an optional label to use it in the artifact name, for example
+`./build.sh v1.0.0` creates `dist/Kinetix-v1.0.0.dmg`.
+
 ## Tests
 
 Run the test suite with:
