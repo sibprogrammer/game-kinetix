@@ -31,6 +31,11 @@ return to the title screen; press Escape from the title screen to quit.
 
 ## Run
 
+A macOS application bundle and DMG are available from the
+[GitHub Releases](https://github.com/sibprogrammer/game-kinetix/releases).
+
+## Development
+
 Kinetix requires [uv](https://docs.astral.sh/uv/) (Python package and project manager) to be installed.
 
 Run the game with uv (all dependencies will be installed automatically on the first launch):
@@ -41,7 +46,7 @@ uv run main.py
 
 The game starts in fullscreen mode. Run `uv run main.py --debug` for a windowed display.
 
-## Build macOS DMG
+### Build macOS DMG
 
 On macOS, create a local application bundle and DMG with:
 
@@ -52,7 +57,7 @@ On macOS, create a local application bundle and DMG with:
 The artifact is written to `dist/Kinetix-local.dmg`. Pass an optional label to use it in the artifact name, for example
 `./build.sh v1.0.0` creates `dist/Kinetix-v1.0.0.dmg`.
 
-## Tests
+### Tests
 
 Run the test suite with:
 
@@ -65,6 +70,8 @@ uv run pytest
 Levels are editable [Tiled](https://www.mapeditor.org/) TMX maps in `levels/`. Each map uses the shared
 `bricks.tsx` tileset and its `Bricks` tile layer; empty cells use tile ID `0`, and brick tiles use IDs `1` through `14`
 to correspond to `brick0.png` through `brickd.png`.
+
+![Level editor](screenshots/04.png)
 
 ## Credits
 
