@@ -13,6 +13,7 @@ collect power-ups, and enter the portal to advance.
 - Keyboard and joystick controls
 - Multiple brick layouts with destructible, multi-hit, and indestructible bricks
 - Power-ups including bat size changes, magnet, gun, multiball, ball-speed modifiers, portals, and extra lives
+- Persistent top-ten high-score table
 - Fullscreen mode
 - Animated effects, sound effects, music track
 
@@ -44,7 +45,23 @@ Run the game with uv (all dependencies will be installed automatically on the fi
 uv run main.py
 ```
 
-The game starts in fullscreen mode. Run `uv run main.py --debug` for a windowed display.
+The game starts in fullscreen mode. Use `--windowed` to run in a window:
+
+```sh
+uv run main.py --windowed
+```
+
+Use `--debug` to enable debug controls. It can be combined with `--windowed`:
+
+```sh
+uv run main.py --windowed --debug
+```
+
+| Debug key | Action |
+| --- | --- |
+| F | Toggle the FPS counter |
+| G | End the current game |
+| P | Activate the portal |
 
 ### Build macOS DMG
 

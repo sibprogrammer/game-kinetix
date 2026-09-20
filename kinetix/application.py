@@ -15,6 +15,7 @@ from .high_scores import top as top_high_scores
 from .types import State
 
 fullscreen_mode = True
+debug_mode = False
 keyboard_controls = KeyboardControls()
 second_keyboard_controls = KeyboardControls("a", "d", "s")
 player_controls = ()
@@ -78,7 +79,8 @@ def update():
                 runtime.game.update()
             else:
                 runtime.game.play_sound("game_over")
-                record_high_score(runtime.game.score)
+                if not debug_mode:
+                    record_high_score(runtime.game.score)
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
@@ -168,11 +170,11 @@ def toggle_pause():
 
 def on_key_down(key):
     global paused, show_fps, state
-    if key == K_f and not fullscreen_mode:
+    if key == K_f and debug_mode:
         show_fps = not show_fps
-    if key == K_g and not fullscreen_mode:
+    if key == K_g and debug_mode:
         state, paused = State.GAME_OVER, False
-    if key == K_p and not fullscreen_mode and state == State.PLAY:
+    if key == K_p and debug_mode and state == State.PLAY:
         runtime.game.activate_portal()
     if key == K_ESCAPE:
         if state == State.PLAY:
@@ -193,6 +195,7 @@ def return_to_title():
 def initialize():
     global \
         fullscreen_mode, \
+        debug_mode, \
         keyboard_controls, \
         second_keyboard_controls, \
         player_controls, \
@@ -203,7 +206,8 @@ def initialize():
         num_players, \
         show_fps, \
         fps
-    fullscreen_mode = "--debug" not in sys.argv
+    fullscreen_mode = "--windowed" not in sys.argv
+    debug_mode = "--debug" in sys.argv
     pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=1024)
     pygame.init()
     if fullscreen_mode:
