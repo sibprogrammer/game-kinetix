@@ -234,6 +234,7 @@ class Game:
                         self.portal_frame + 1,
                     )
             elif any(bat.is_portal_transition_complete() for bat in self.bats):
+                self.score += self.bricks_remaining * 10
                 self.new_level(self.level_num + 1)
         if self.detect_stuck_balls():
             changed = False
