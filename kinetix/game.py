@@ -1,5 +1,5 @@
 import math
-from random import randint, random
+from random import randint, random, shuffle
 
 import pygame
 from pygame import surface
@@ -63,7 +63,7 @@ def brick_collide(x, y, grid_x, grid_y, radius):
 
 
 class Game:
-    def __init__(self, controls=None, lives=3):
+    def __init__(self, controls=None, lives=3, random_levels=False):
         if controls is None:
             self.controls = (AIControls(),)
         elif isinstance(controls, tuple):
@@ -71,8 +71,18 @@ class Game:
         else:
             self.controls = (controls,)
         self.lives, self.score = lives, 0
+        self.random_levels = random_levels
+        self.level_order = []
         self.next_bat_index = randint(0, len(self.controls) - 1)
-        self.new_level(randint(0, len(LEVELS) - 1))
+        self.new_level(self.next_level_number())
+
+    def next_level_number(self):
+        if not self.random_levels:
+            return 0 if not hasattr(self, "level_num") else self.level_num + 1
+        if not self.level_order:
+            self.level_order = list(range(len(LEVELS)))
+            shuffle(self.level_order)
+        return self.level_order.pop()
 
     def new_level(self, level_num):
         self.play_sound("start_game")
@@ -235,7 +245,7 @@ class Game:
                     )
             elif any(bat.is_portal_transition_complete() for bat in self.bats):
                 self.score += self.bricks_remaining * 10
-                self.new_level(self.level_num + 1)
+                self.new_level(self.next_level_number())
         if self.detect_stuck_balls():
             changed = False
             for row in range(self.num_rows):

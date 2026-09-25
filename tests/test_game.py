@@ -41,3 +41,18 @@ def test_change_all_ball_speeds_respects_limits(game):
 
     game.change_all_ball_speeds(-2 * BALL_MAX_SPEED)
     assert [ball.speed for ball in game.balls] == [BALL_MIN_SPEED]
+
+
+def test_game_starts_with_the_first_level_by_default(game):
+    assert game.level_num == 0
+
+
+def test_random_levels_use_a_shuffled_level_order(game, monkeypatch):
+    monkeypatch.setattr("kinetix.game.shuffle", lambda levels: levels.sort())
+    random_game = Game(random_levels=True)
+
+    assert [
+        random_game.level_num,
+        random_game.next_level_number(),
+        random_game.next_level_number(),
+    ] == [20, 19, 18]
