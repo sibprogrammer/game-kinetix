@@ -6,7 +6,13 @@ import pygame
 from pygame.locals import K_ESCAPE, K_RETURN, K_f, K_g, K_p
 
 from . import runtime
-from .assets import image
+from .assets import (
+    FONT_GLYPH_ADVANCE,
+    FONT_GLYPH_SIZE,
+    FONT_GLYPH_WIDTH,
+    draw_text,
+    image,
+)
 from .constants import HEIGHT, WIDTH
 from .controls import AIControls, JoystickControls, KeyboardControls, PlayerControls
 from .game import Game
@@ -27,6 +33,9 @@ num_players = 1
 show_fps = False
 fps = 0.0
 ROOT = Path(__file__).parent.parent
+GAME_OVER_TEXT = "GAME OVER"
+GAME_OVER_ANIMATION_FRAMES = 15
+GAME_OVER_MASK_OPACITY = 128
 
 
 def setup_joystick_controls():
@@ -92,17 +101,18 @@ def update():
 def draw_overlay(screen):
     if state == State.TITLE:
         screen.blit(image("title"), (0, 0))
-        menu_image = f'menu{num_players - 1}'
-        screen.blit(image(menu_image), (0, 220))
+        for players in (1, 2):
+            y = 430 + (players - 1) * 60
+            if players == num_players:
+                draw_text(screen, ">", (120, y))
+            if players == 1:
+                draw_text(screen, f"{players} PLAYER", (163, y))
+            else:
+                draw_text(screen, f"{players} PLAYERS", (163, y))
     elif state == State.GAME_OVER:
-        screen.blit(image(f"gameover{total_frames // 4 % 15}"), (WIDTH // 2 - 225, 450))
-        font = pygame.font.Font(None, 32)
-        title_shadow = font.render("HIGH SCORES", True, "black")
-        screen.blit(title_shadow, title_shadow.get_rect(center=(WIDTH // 2 + 2, 102)))
-        title = font.render("HIGH SCORES", True, "white")
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
-        score_font = pygame.font.SysFont("monospace", 32)
-        scores = top_high_scores()
+        draw_game_over(screen)
+        draw_sprite_text_centered(screen, "HIGH SCORES", 70, "white")
+        scores = top_high_scores()[:5]
         current_score = runtime.game.score if runtime.game is not None else None
         current_score_position = (
             scores.index(current_score) + 1 if current_score in scores else None
@@ -110,21 +120,59 @@ def draw_overlay(screen):
         current_score_color = "yellow" if total_frames // 15 % 2 == 0 else "white"
         for position, score in enumerate(scores, start=1):
             score_text = f"{position:02d} - {score:05d}"
-            shadow = score_font.render(score_text, True, "black")
-            screen.blit(
-                shadow, shadow.get_rect(center=(WIDTH // 2 + 2, 117 + position * 28))
-            )
             color = (
                 current_score_color if position == current_score_position else "white"
             )
-            text = score_font.render(score_text, True, color)
-            screen.blit(text, text.get_rect(center=(WIDTH // 2, 115 + position * 28)))
+            draw_sprite_text_centered(screen, score_text, 70 + position * 65, color)
     if paused:
-        text = pygame.font.Font(None, 48).render("PAUSED", True, "white")
-        screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+        pause_text = "PAUSED"
+        pause_width = FONT_GLYPH_WIDTH + FONT_GLYPH_ADVANCE * (len(pause_text) - 1)
+        draw_text(
+            screen,
+            pause_text,
+            ((WIDTH - pause_width) // 2, 500),
+        )
     if show_fps:
         text = pygame.font.Font(None, 24).render(f"FPS: {fps:.1f}", True, "white")
         screen.blit(text, text.get_rect(topright=(WIDTH - 10, 10)))
+
+
+def draw_game_over(screen):
+    text_width = (
+        FONT_GLYPH_WIDTH
+        + FONT_GLYPH_ADVANCE * (len(GAME_OVER_TEXT) - 2)
+        + FONT_GLYPH_ADVANCE // 2
+    )
+    text_surface = pygame.Surface((text_width, FONT_GLYPH_SIZE[1]), pygame.SRCALPHA)
+    draw_text(text_surface, GAME_OVER_TEXT, (0, 0))
+
+    mask_width = text_width // 3
+    animation_frame = total_frames // 4 % GAME_OVER_ANIMATION_FRAMES
+    mask_x = (
+        animation_frame * (text_width + mask_width) // GAME_OVER_ANIMATION_FRAMES
+        - mask_width
+    )
+    mask = pygame.Surface((mask_width, FONT_GLYPH_SIZE[1]), pygame.SRCALPHA)
+    mask.fill((0, 0, 0, GAME_OVER_MASK_OPACITY))
+    mask.blit(text_surface, (-mask_x, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    text_surface.blit(mask, (mask_x, 0))
+    screen.blit(text_surface, ((WIDTH - text_width) // 2, 500))
+
+
+def draw_sprite_text_centered(screen, text, y, color):
+    text_width = FONT_GLYPH_WIDTH + sum(
+        FONT_GLYPH_ADVANCE // 2 if character == " " else FONT_GLYPH_ADVANCE
+        for character in text[:-1]
+    )
+    text_surface = pygame.Surface((text_width, FONT_GLYPH_SIZE[1]), pygame.SRCALPHA)
+    draw_text(text_surface, text, (0, 0))
+    text_surface.fill(color, special_flags=pygame.BLEND_RGB_MULT)
+
+    shadow = text_surface.copy()
+    shadow.fill("black", special_flags=pygame.BLEND_RGB_MULT)
+    x = (WIDTH - text_width) // 2
+    screen.blit(shadow, (x + 2, y + 2))
+    screen.blit(text_surface, (x, y))
 
 
 def draw():
