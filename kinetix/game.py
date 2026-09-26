@@ -32,7 +32,7 @@ from .constants import (
 )
 from .controls import AIControls
 from .impact import Impact
-from .levels import LEVELS
+from .levels import LEVEL_MAP_NAMES, LEVELS
 from .meanie import Meanie
 from .types import BatType, CollisionType
 
@@ -104,6 +104,7 @@ class Game:
         self.shadow_surface = surface.Surface((WIDTH, HEIGHT), flags=pygame.SRCALPHA)
         self.shadow_surface.fill((0, 0, 0, 0))
         level = LEVELS[level_num]
+        self.level_map_name = LEVEL_MAP_NAMES[level_num]
         self.num_rows, self.num_cols = len(level), len(level[0])
         self.bricks = [row.copy() for row in level]
         self.bricks_remaining = 0

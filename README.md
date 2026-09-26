@@ -61,7 +61,7 @@ uv run main.py --windowed --debug
 
 | Debug key | Action |
 | --- | --- |
-| F | Toggle the FPS counter |
+| D | Toggle debug output |
 | G | End the current game |
 | P | Activate the portal |
 

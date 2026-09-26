@@ -1,4 +1,4 @@
-from pygame.locals import K_ESCAPE, K_SPACE
+from pygame.locals import K_ESCAPE, K_SPACE, K_d
 
 from kinetix import application, runtime
 from kinetix.joystick_controls import JoystickControls
@@ -129,6 +129,15 @@ def test_escape_returns_to_title_from_game_over(monkeypatch):
     application.on_key_down(K_ESCAPE)
 
     assert returned_to_title == [True]
+
+
+def test_d_toggles_debug_information(monkeypatch):
+    monkeypatch.setattr(application, "debug_mode", True)
+    monkeypatch.setattr(application, "show_debug_info", False)
+
+    application.on_key_down(K_d)
+
+    assert application.show_debug_info is True
 
 
 def test_joystick_directional_menu_input_is_edge_triggered():

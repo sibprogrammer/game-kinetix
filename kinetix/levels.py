@@ -34,7 +34,8 @@ def _load_level(path):
     ]
 
 
-LEVELS = tuple(
-    _load_level(path)
-    for path in sorted(LEVELS_DIRECTORY.glob("*.tmx"), key=_natural_sort_key)
+LEVEL_MAP_PATHS = tuple(
+    sorted(LEVELS_DIRECTORY.glob("*.tmx"), key=_natural_sort_key)
 )
+LEVELS = tuple(_load_level(path) for path in LEVEL_MAP_PATHS)
+LEVEL_MAP_NAMES = tuple(path.stem for path in LEVEL_MAP_PATHS)

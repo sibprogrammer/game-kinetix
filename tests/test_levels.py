@@ -1,10 +1,11 @@
 from pathlib import Path
 
-from kinetix.levels import LEVELS, _natural_sort_key
+from kinetix.levels import LEVEL_MAP_NAMES, LEVELS, _natural_sort_key
 
 
 def test_levels_are_rectangular_and_use_supported_bricks():
     assert LEVELS
+    assert len(LEVEL_MAP_NAMES) == len(LEVELS)
     for level in LEVELS:
         assert level
         assert len({len(row) for row in level}) == 1

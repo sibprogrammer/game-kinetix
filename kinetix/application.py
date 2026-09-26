@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 import pygame
-from pygame.locals import K_DOWN, K_ESCAPE, K_RETURN, K_SPACE, K_UP, K_f, K_g, K_p
+from pygame.locals import K_DOWN, K_ESCAPE, K_RETURN, K_SPACE, K_UP, K_d, K_g, K_p
 
 from . import runtime
 from .assets import (
@@ -32,7 +32,7 @@ state = State.TITLE
 total_frames = 0
 paused = False
 num_players = 1
-show_fps = False
+show_debug_info = False
 fps = 0.0
 ROOT = Path(__file__).parent.parent
 GAME_OVER_TEXT = "GAME OVER"
@@ -153,9 +153,13 @@ def draw_overlay(screen):
             pause_text,
             ((WIDTH - pause_width) // 2, 500),
         )
-    if show_fps:
-        text = pygame.font.Font(None, 24).render(f"FPS: {fps:.1f}", True, "white")
+    if show_debug_info:
+        text = pygame.font.Font(None, 24).render(f"FPS: {fps:.0f}", True, "white")
         screen.blit(text, text.get_rect(topright=(WIDTH - 10, 10)))
+        text = pygame.font.Font(None, 24).render(
+            f"Map: {runtime.game.level_map_name}", True, "white"
+        )
+        screen.blit(text, text.get_rect(topright=(WIDTH - 10, 35)))
 
 
 def draw_game_over(screen):
@@ -238,9 +242,9 @@ def toggle_pause():
 
 
 def on_key_down(key):
-    global paused, show_fps, state
-    if key == K_f and debug_mode:
-        show_fps = not show_fps
+    global paused, show_debug_info, state
+    if key == K_d and debug_mode:
+        show_debug_info = not show_debug_info
     if key == K_g and debug_mode:
         state, paused = State.GAME_OVER, False
     if key == K_p and debug_mode and state == State.PLAY:
@@ -399,7 +403,7 @@ def initialize():
         random_levels, \
         meanies, \
         high_scores, \
-        show_fps, \
+        show_debug_info, \
         fps
     fullscreen_mode = "--windowed" not in sys.argv
     debug_mode = "--debug" in sys.argv
@@ -445,7 +449,7 @@ def initialize():
         random_levels,
         meanies,
         high_scores,
-        show_fps,
+        show_debug_info,
         fps,
     ) = (
         State.TITLE,
