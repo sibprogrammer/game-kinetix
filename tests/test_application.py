@@ -1,4 +1,4 @@
-from pygame.locals import K_SPACE
+from pygame.locals import K_ESCAPE, K_SPACE
 
 from kinetix import application, runtime
 from kinetix.joystick_controls import JoystickControls
@@ -115,6 +115,20 @@ def test_space_confirms_a_setting_once_when_keyboard_fire_is_pressed(monkeypatch
     application.handle_joystick_menu_input()
 
     assert application.in_game_music is False
+
+
+def test_escape_returns_to_title_from_game_over(monkeypatch):
+    monkeypatch.setattr(application, "state", State.GAME_OVER)
+    returned_to_title = []
+    monkeypatch.setattr(
+        application,
+        "return_to_title",
+        lambda: returned_to_title.append(True),
+    )
+
+    application.on_key_down(K_ESCAPE)
+
+    assert returned_to_title == [True]
 
 
 def test_joystick_directional_menu_input_is_edge_triggered():

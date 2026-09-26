@@ -276,7 +276,7 @@ def on_key_down(key):
             state = State.TITLE
         return
     if key == K_ESCAPE:
-        if state == State.PLAY:
+        if state in (State.PLAY, State.GAME_OVER):
             return_to_title()
         else:
             runtime.running = False
