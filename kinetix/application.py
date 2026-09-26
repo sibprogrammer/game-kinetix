@@ -103,10 +103,10 @@ def draw_overlay(screen):
                 draw_text(screen, ">", (120, y))
             draw_text(screen, option, (163, y))
     elif state == State.SETTINGS:
-        screen.blit(image("title"), (0, 0))
-        draw_sprite_text_centered(screen, "SETTINGS", 300, "white")
+        screen.blit(image("overlay"), (0, 0))
+        draw_sprite_text_centered(screen, "SETTINGS", 70, "white")
         for index, option in enumerate(SETTINGS_OPTIONS):
-            y = 390 + index * 70
+            y = 160 + index * 70
             if index == settings_selection:
                 draw_text(screen, ">", (30, y))
             draw_text(screen, option, (70, y))
