@@ -291,8 +291,6 @@ def handle_joystick_menu_input():
         handle_menu_input(1)
     elif joystick_index is not None:
         handle_menu_input(0, True, joystick_index)
-    elif any(controls.fire_pressed() for controls in player_controls):
-        handle_menu_input(0, True)
 
 
 def handle_menu_input(direction, confirm=False, joystick_index=None):

@@ -1,3 +1,5 @@
+from pygame.locals import K_SPACE
+
 from kinetix import application, runtime
 from kinetix.joystick_controls import JoystickControls
 from kinetix.state import State
@@ -95,6 +97,23 @@ def test_joystick_navigates_and_confirms_settings(monkeypatch):
     assert application.state == State.SETTINGS
 
     application.handle_joystick_menu_input()
+    assert application.in_game_music is False
+
+
+def test_space_confirms_a_setting_once_when_keyboard_fire_is_pressed(monkeypatch):
+    keyboard_player = type(
+        "KeyboardPlayer", (), {"fire_pressed": lambda _self: True}
+    )()
+    monkeypatch.setattr(runtime, "joystick_controls", [])
+    monkeypatch.setattr(application, "player_controls", (keyboard_player,))
+    monkeypatch.setattr(application, "state", State.SETTINGS)
+    monkeypatch.setattr(application, "settings_selection", 0)
+    monkeypatch.setattr(application, "in_game_music", True)
+    monkeypatch.setattr(application, "stop_music", lambda: None)
+
+    application.on_key_down(K_SPACE)
+    application.handle_joystick_menu_input()
+
     assert application.in_game_music is False
 
 
