@@ -277,15 +277,25 @@ def on_key_down(key):
 
 
 def handle_joystick_menu_input():
+    joystick_index = next(
+        (
+            index
+            for index, controls in enumerate(runtime.joystick_controls)
+            if controls.fire_pressed()
+        ),
+        None,
+    )
     if any(controls.menu_up_pressed() for controls in runtime.joystick_controls):
         handle_menu_input(-1)
     elif any(controls.menu_down_pressed() for controls in runtime.joystick_controls):
         handle_menu_input(1)
+    elif joystick_index is not None:
+        handle_menu_input(0, True, joystick_index)
     elif any(controls.fire_pressed() for controls in player_controls):
         handle_menu_input(0, True)
 
 
-def handle_menu_input(direction, confirm=False):
+def handle_menu_input(direction, confirm=False, joystick_index=None):
     global in_game_music, main_menu_selection, player_selection, settings_selection, state
     global random_levels, sound_effects
     if state == State.TITLE:
@@ -309,7 +319,7 @@ def handle_menu_input(direction, confirm=False):
             )
         elif confirm:
             if player_selection < 2:
-                start_game(player_selection + 1)
+                start_game(player_selection + 1, joystick_index)
             else:
                 state = State.TITLE
     elif state == State.SETTINGS:
@@ -334,11 +344,16 @@ def handle_menu_input(direction, confirm=False):
                 state = State.TITLE
 
 
-def start_game(players):
+def start_game(players, joystick_index=None):
     global num_players, paused, state
     num_players = players
+    controls = (
+        (player_controls[joystick_index],)
+        if players == 1 and joystick_index is not None
+        else player_controls[:players]
+    )
     runtime.game = Game(
-        player_controls[:num_players],
+        controls,
         random_levels=random_levels,
         sound_effects=sound_effects,
     )

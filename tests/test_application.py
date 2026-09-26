@@ -31,7 +31,11 @@ def test_joystick_navigates_and_confirms_player_selection(monkeypatch):
     monkeypatch.setattr(application, "player_selection", 0)
     started_players = []
     monkeypatch.setattr(
-        application, "start_game", lambda players: started_players.append(players)
+        application,
+        "start_game",
+        lambda players, joystick_index=None: started_players.append(
+            (players, joystick_index)
+        ),
     )
 
     joystick.fire = True
@@ -46,7 +50,32 @@ def test_joystick_navigates_and_confirms_player_selection(monkeypatch):
     joystick.down = False
     joystick.fire = True
     application.handle_joystick_menu_input()
-    assert started_players == [2]
+    assert started_players == [(2, 0)]
+
+
+def test_joystick_confirming_single_player_controls_the_game(monkeypatch):
+    first_joystick = FakeJoystickControls()
+    second_joystick = FakeJoystickControls(fire=True)
+    monkeypatch.setattr(runtime, "joystick_controls", [first_joystick, second_joystick])
+    monkeypatch.setattr(
+        application,
+        "player_controls",
+        (object(), object()),
+    )
+    monkeypatch.setattr(application, "state", State.PLAYER_SELECTION)
+    monkeypatch.setattr(application, "player_selection", 0)
+    started_games = []
+    monkeypatch.setattr(
+        application,
+        "start_game",
+        lambda players, joystick_index=None: started_games.append(
+            (players, joystick_index)
+        ),
+    )
+
+    application.handle_joystick_menu_input()
+
+    assert started_games == [(1, 1)]
 
 
 def test_joystick_navigates_and_confirms_settings(monkeypatch):
