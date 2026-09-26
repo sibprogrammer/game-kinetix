@@ -18,6 +18,8 @@ from .controls import AIControls, JoystickControls, KeyboardControls, PlayerCont
 from .game import Game
 from .high_scores import record as record_high_score
 from .high_scores import top as top_high_scores
+from .settings import load as load_settings
+from .settings import save as save_settings
 from .types import State
 
 fullscreen_mode = True
@@ -46,6 +48,7 @@ in_game_music = True
 sound_effects = True
 random_levels = False
 meanies = False
+high_scores = []
 
 
 def setup_joystick_controls():
@@ -66,7 +69,7 @@ def update_controls():
 
 
 def update():
-    global state, total_frames
+    global high_scores, state, total_frames
     if runtime.game is None:
         runtime.game = Game(
             ai_controls, sound_effects=sound_effects, meanies=meanies
@@ -89,7 +92,7 @@ def update():
             else:
                 runtime.game.play_sound("game_over")
                 if not debug_mode:
-                    record_high_score(runtime.game.score)
+                    high_scores = record_high_score(runtime.game.score, high_scores)
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
@@ -130,7 +133,7 @@ def draw_overlay(screen):
     elif state == State.GAME_OVER:
         draw_game_over(screen)
         draw_sprite_text_centered(screen, "HIGH SCORES", 70, "white")
-        scores = top_high_scores()[:5]
+        scores = top_high_scores(high_scores)[:5]
         current_score = runtime.game.score if runtime.game is not None else None
         current_score_position = (
             scores.index(current_score) + 1 if current_score in scores else None
@@ -395,6 +398,7 @@ def initialize():
         sound_effects, \
         random_levels, \
         meanies, \
+        high_scores, \
         show_fps, \
         fps
     fullscreen_mode = "--windowed" not in sys.argv
@@ -440,6 +444,7 @@ def initialize():
         sound_effects,
         random_levels,
         meanies,
+        high_scores,
         show_fps,
         fps,
     ) = (
@@ -455,9 +460,16 @@ def initialize():
         True,
         False,
         False,
+        [],
         False,
         0.0,
     )
+    settings = load_settings()
+    in_game_music = settings["in_game_music"]
+    sound_effects = settings["sound_effects"]
+    random_levels = settings["random_levels"]
+    meanies = settings["meanies"]
+    high_scores = settings["high_scores"]
     if in_game_music:
         play_music("title_theme")
     runtime.running = True
@@ -477,4 +489,13 @@ def run():
         update()
         draw()
         pygame.display.flip()
+    save_settings(
+        {
+            "in_game_music": in_game_music,
+            "sound_effects": sound_effects,
+            "random_levels": random_levels,
+            "meanies": meanies,
+            "high_scores": high_scores,
+        }
+    )
     pygame.quit()

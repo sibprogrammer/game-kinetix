@@ -12,5 +12,5 @@ wheels/
 # Tiled editor
 *.tiled-session
 
-# High scores
-/scores
+# User settings
+/.settings

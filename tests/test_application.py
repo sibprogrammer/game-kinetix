@@ -142,3 +142,21 @@ def test_joystick_directional_menu_input_is_edge_triggered():
     controls.get_y = lambda: -8
     controls.update()
     assert controls.menu_up_pressed()
+
+
+def test_debug_mode_does_not_record_high_scores(monkeypatch):
+    game = type(
+        "Game",
+        (),
+        {"lives": 0, "score": 500, "play_sound": lambda _self, _sound: None},
+    )()
+    monkeypatch.setattr(runtime, "game", game)
+    monkeypatch.setattr(runtime, "joystick_controls", [])
+    monkeypatch.setattr(application, "state", State.PLAY)
+    monkeypatch.setattr(application, "paused", False)
+    monkeypatch.setattr(application, "debug_mode", True)
+    monkeypatch.setattr(application, "high_scores", [400] + [0] * 9)
+
+    application.update()
+
+    assert application.high_scores == [400] + [0] * 9
