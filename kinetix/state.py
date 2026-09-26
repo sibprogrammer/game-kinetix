@@ -7,3 +7,4 @@ class State(Enum):
     GAME_OVER = 3
     SETTINGS = 4
     PLAYER_SELECTION = 5
+    HIGH_SCORES = 6

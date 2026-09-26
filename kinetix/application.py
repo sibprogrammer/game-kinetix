@@ -39,12 +39,19 @@ ROOT = Path(__file__).parent.parent
 GAME_OVER_TEXT = "GAME OVER"
 GAME_OVER_ANIMATION_FRAMES = 15
 GAME_OVER_MASK_OPACITY = 128
-MAIN_MENU_OPTIONS = ("START", "SETTINGS", "EXIT")
+MENU_LINE_INTERVAL = 70
+MAIN_MENU_EXIT_Y = 550
+MAIN_MENU_OPTIONS = ("START", "HIGH SCORES", "SETTINGS", "EXIT")
 PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
 SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "MEANIES", "BACK")
+HIGH_SCORES_OPTIONS = ("BACK",)
+MAIN_MENU_FIRST_OPTION_Y = MAIN_MENU_EXIT_Y - (
+    len(MAIN_MENU_OPTIONS) - 1
+) * MENU_LINE_INTERVAL
 main_menu_selection = 0
 player_selection = 0
 settings_selection = 0
+high_scores_selection = 0
 in_game_music = True
 sound_effects = True
 random_levels = False
@@ -85,7 +92,12 @@ def update():
         and any(controls.pause_pressed() for controls in runtime.joystick_controls)
     ):
         toggle_pause()
-    if state in (State.TITLE, State.PLAYER_SELECTION, State.SETTINGS):
+    if state in (
+        State.TITLE,
+        State.PLAYER_SELECTION,
+        State.SETTINGS,
+        State.HIGH_SCORES,
+    ):
         ai_controls.update()
         runtime.game.update()
         handle_joystick_menu_input()
@@ -115,7 +127,7 @@ def draw_overlay(screen):
     if state == State.TITLE:
         screen.blit(image("title"), (0, 0))
         for index, option in enumerate(MAIN_MENU_OPTIONS):
-            y = 430 + index * 60
+            y = MAIN_MENU_FIRST_OPTION_Y + index * MENU_LINE_INTERVAL
             if index == main_menu_selection:
                 draw_text(screen, ">", (120, y))
             draw_text(screen, option, (163, y))
@@ -123,7 +135,7 @@ def draw_overlay(screen):
         screen.blit(image("overlay"), (0, 0))
         draw_sprite_text_centered(screen, "SETTINGS", 70, "white")
         for index, option in enumerate(SETTINGS_OPTIONS):
-            y = 160 + index * 70
+            y = 160 + index * MENU_LINE_INTERVAL
             if index == settings_selection:
                 draw_text(screen, ">", (30, y))
             draw_text(screen, option, (70, y))
@@ -133,10 +145,21 @@ def draw_overlay(screen):
     elif state == State.PLAYER_SELECTION:
         screen.blit(image("title"), (0, 0))
         for index, option in enumerate(PLAYER_SELECTION_OPTIONS):
-            y = 430 + index * 60
+            y = MAIN_MENU_FIRST_OPTION_Y + index * MENU_LINE_INTERVAL
             if index == player_selection:
                 draw_text(screen, ">", (120, y))
             draw_text(screen, option, (163, y))
+    elif state == State.HIGH_SCORES:
+        screen.blit(image("overlay"), (0, 0))
+        draw_sprite_text_centered(screen, "HIGH SCORES", 70, "white")
+        for position, score in enumerate(top_high_scores(high_scores)[:5], start=1):
+            draw_sprite_text_centered(
+                screen, f"{position:02d} - {score:05d}", 70 + position * 65, "white"
+            )
+        back_y = 500
+        if high_scores_selection == 0:
+            draw_text(screen, ">", (120, back_y))
+        draw_text(screen, HIGH_SCORES_OPTIONS[0], (163, back_y))
     elif state == State.GAME_OVER:
         draw_game_over(screen)
         draw_sprite_text_centered(screen, "HIGH SCORES", 70, "white")
@@ -307,6 +330,16 @@ def on_key_down(key):
         elif key == K_ESCAPE:
             state = State.TITLE
         return
+    if state == State.HIGH_SCORES:
+        if key == K_UP:
+            handle_menu_input(-1)
+        elif key == K_DOWN:
+            handle_menu_input(1)
+        elif key == K_SPACE:
+            handle_menu_input(0, True)
+        elif key == K_ESCAPE:
+            state = State.TITLE
+        return
     if key == K_ESCAPE:
         if state in (State.PLAY, State.GAME_OVER):
             return_to_title()
@@ -334,7 +367,8 @@ def handle_joystick_menu_input():
 
 
 def handle_menu_input(direction, confirm=False, joystick_index=None):
-    global in_game_music, main_menu_selection, player_selection, settings_selection, state
+    global high_scores_selection, in_game_music, main_menu_selection, player_selection
+    global settings_selection, state
     global meanies, random_levels, sound_effects
     if state == State.TITLE:
         if direction:
@@ -346,6 +380,9 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
                 player_selection = 0
                 state = State.PLAYER_SELECTION
             elif main_menu_selection == 1:
+                high_scores_selection = 0
+                state = State.HIGH_SCORES
+            elif main_menu_selection == 2:
                 state = State.SETTINGS
             else:
                 runtime.running = False
@@ -382,6 +419,14 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
                 meanies = not meanies
             else:
                 state = State.TITLE
+    elif state == State.HIGH_SCORES:
+        if direction:
+            high_scores_selection = min(
+                max(0, high_scores_selection + direction),
+                len(HIGH_SCORES_OPTIONS) - 1,
+            )
+        elif confirm:
+            state = State.TITLE
 
 
 def start_game(players, joystick_index=None):
@@ -431,6 +476,7 @@ def initialize():
         main_menu_selection, \
         player_selection, \
         settings_selection, \
+        high_scores_selection, \
         in_game_music, \
         sound_effects, \
         random_levels, \
@@ -477,6 +523,7 @@ def initialize():
         main_menu_selection,
         player_selection,
         settings_selection,
+        high_scores_selection,
         in_game_music,
         sound_effects,
         random_levels,
@@ -490,6 +537,7 @@ def initialize():
         0,
         False,
         1,
+        0,
         0,
         0,
         0,

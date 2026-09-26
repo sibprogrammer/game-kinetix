@@ -91,6 +91,9 @@ def test_joystick_navigates_and_confirms_settings(monkeypatch):
     application.handle_joystick_menu_input()
     assert application.main_menu_selection == 1
 
+    application.handle_joystick_menu_input()
+    assert application.main_menu_selection == 2
+
     joystick.down = False
     joystick.fire = True
     application.handle_joystick_menu_input()
@@ -98,6 +101,22 @@ def test_joystick_navigates_and_confirms_settings(monkeypatch):
 
     application.handle_joystick_menu_input()
     assert application.in_game_music is False
+
+
+def test_main_menu_opens_high_scores_and_back_returns_to_title(monkeypatch):
+    monkeypatch.setattr(application, "state", State.TITLE)
+    monkeypatch.setattr(application, "main_menu_selection", 0)
+    monkeypatch.setattr(application, "high_scores_selection", 0)
+
+    application.handle_menu_input(1)
+    application.handle_menu_input(0, True)
+
+    assert application.state == State.HIGH_SCORES
+    assert application.high_scores_selection == 0
+
+    application.handle_menu_input(0, True)
+
+    assert application.state == State.TITLE
 
 
 def test_space_confirms_a_setting_once_when_keyboard_fire_is_pressed(monkeypatch):
