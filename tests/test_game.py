@@ -58,14 +58,26 @@ def test_game_starts_with_the_first_level_by_default(game):
 
 
 def test_random_levels_use_a_shuffled_level_order(game, monkeypatch):
-    monkeypatch.setattr("kinetix.game.shuffle", lambda levels: levels.sort())
+    monkeypatch.setattr("kinetix.game.LEVELS", ([[0] * 8],) * 3)
+    monkeypatch.setattr("kinetix.game.LEVEL_MAP_NAMES", ("one", "two", "three"))
+    shuffle_calls = []
+
+    def shuffle_levels(levels):
+        shuffle_calls.append(levels.copy())
+        levels.reverse()
+
+    monkeypatch.setattr("kinetix.game.shuffle", shuffle_levels)
     random_game = Game(random_levels=True)
 
     assert [
         random_game.level_num,
         random_game.next_level_number(),
         random_game.next_level_number(),
-    ] == [20, 19, 18]
+        random_game.next_level_number(),
+        random_game.next_level_number(),
+    ] == [2, 1, 0, 2, 1]
+    assert random_game.level_order == [2, 1, 0]
+    assert shuffle_calls == [[0, 1, 2]]
 
 
 def test_meanies_setting_is_disabled_by_default_and_can_be_enabled(monkeypatch):

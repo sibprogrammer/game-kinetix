@@ -83,17 +83,17 @@ class Game:
         self.random_levels = random_levels
         self.sound_effects = sound_effects
         self.meanies_enabled = meanies
-        self.level_order = []
+        self.level_order = list(range(len(LEVELS)))
+        if self.random_levels:
+            shuffle(self.level_order)
+        self.level_order_index = 0
         self.next_bat_index = randint(0, len(self.controls) - 1)
         self.new_level(self.next_level_number())
 
     def next_level_number(self):
-        if not self.random_levels:
-            return 0 if not hasattr(self, "level_num") else self.level_num + 1
-        if not self.level_order:
-            self.level_order = list(range(len(LEVELS)))
-            shuffle(self.level_order)
-        return self.level_order.pop()
+        level_num = self.level_order[self.level_order_index]
+        self.level_order_index = (self.level_order_index + 1) % len(self.level_order)
+        return level_num
 
     def new_level(self, level_num):
         self.play_sound("start_game")
