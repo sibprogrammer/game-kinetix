@@ -1,5 +1,5 @@
 import math
-from random import randint, random, shuffle
+from random import choice, randint, random, shuffle
 
 import pygame
 from pygame import surface
@@ -22,6 +22,7 @@ from .constants import (
     BRICKS_Y_START,
     HEIGHT,
     LEFT_EDGE,
+    MEANIE_PORTAL_HOLD_DURATION,
     PORTAL_ANIMATION_SPEED,
     POWERUP_CHANCE,
     RIGHT_EDGE,
@@ -32,6 +33,7 @@ from .constants import (
 from .controls import AIControls
 from .impact import Impact
 from .levels import LEVELS
+from .meanie import Meanie
 from .types import BatType, CollisionType
 
 ARENA_COUNT = 7
@@ -63,7 +65,14 @@ def brick_collide(x, y, grid_x, grid_y, radius):
 
 
 class Game:
-    def __init__(self, controls=None, lives=3, random_levels=False, sound_effects=True):
+    def __init__(
+        self,
+        controls=None,
+        lives=3,
+        random_levels=False,
+        sound_effects=True,
+        meanies=False,
+    ):
         if controls is None:
             self.controls = (AIControls(),)
         elif isinstance(controls, tuple):
@@ -73,6 +82,7 @@ class Game:
         self.lives, self.score = lives, 0
         self.random_levels = random_levels
         self.sound_effects = sound_effects
+        self.meanies_enabled = meanies
         self.level_order = []
         self.next_bat_index = randint(0, len(self.controls) - 1)
         self.new_level(self.next_level_number())
@@ -125,7 +135,16 @@ class Game:
             ]
         self.bat = self.bats[0]
         self.balls = [Ball(bat=self.bats[self.next_bat_index])]
-        self.bullets, self.barrels, self.impacts = [], [], []
+        self.bullets, self.barrels, self.impacts, self.meanies = [], [], [], []
+        self.destroyed_bricks = 0
+        self.next_meanie_at = (self.bricks_remaining + 1) // 2
+        self.meanie_portal_frames = [0, 0]
+        self.meanie_portal_index = None
+        self.meanie_portal_direction = 1
+        self.meanie_portal_timer = PORTAL_ANIMATION_SPEED
+        self.meanie_portal_hold_timer = 0
+        self.meanie_portal_release_pending = False
+        self.pending_meanie_portals = []
         self.level_num, self.portal_active, self.portal_frame, self.portal_timer = (
             level_num,
             False,
@@ -160,7 +179,7 @@ class Game:
                 ),
             )
 
-    def collide(self, x, y, direction, radius=BALL_RADIUS):
+    def collide(self, x, y, direction, radius=BALL_RADIUS, collide_with_meanies=True):
         dx, dy = direction
         if dx < 0 and x < LEFT_EDGE + radius:
             return (LEFT_EDGE, y), True, CollisionType.WALL
@@ -188,7 +207,48 @@ class Game:
                     collision = brick_collide(x, y, grid_x, grid_y, radius)
                     if collision is not None:
                         return self._damage_brick(grid_x, grid_y, collision)
+        if collide_with_meanies:
+            for meanie in self.meanies:
+                collision_radius = radius + min(meanie.width, meanie.height) / 2
+                if (Vector2(x, y) - Vector2(meanie.pos)).length_squared() < (
+                    collision_radius**2
+                ):
+                    self.destroy_meanie(meanie)
+                    return meanie.pos, False, CollisionType.MEANIE
         return None
+
+    def destroy_meanie(self, meanie):
+        self.meanies.remove(meanie)
+        self.impacts.append(Impact(meanie.pos, "f"))
+        self.score += 10
+
+    @staticmethod
+    def _overlaps(first, second):
+        def bounds(actor):
+            anchor_x, anchor_y = actor.anchor
+            offset_x = actor.width / 2 if anchor_x == "center" else anchor_x
+            offset_y = actor.height / 2 if anchor_y == "center" else anchor_y
+            return (
+                actor.x - offset_x,
+                actor.y - offset_y,
+                actor.x - offset_x + actor.width,
+                actor.y - offset_y + actor.height,
+            )
+
+        first_left, first_top, first_right, first_bottom = bounds(first)
+        second_left, second_top, second_right, second_bottom = bounds(second)
+        return (
+            first_left < second_right
+            and first_right > second_left
+            and first_top < second_bottom
+            and first_bottom > second_top
+        )
+
+    def destroy_meanies_hit_by_bats(self):
+        for meanie in self.meanies.copy():
+            if any(self._overlaps(meanie, bat) for bat in self.bats):
+                self.destroy_meanie(meanie)
+                self.play_sound("hit_brick")
 
     def _damage_brick(self, x, y, collision):
         center = (
@@ -210,10 +270,51 @@ class Game:
             self.bricks[y][x] = None
             self.redraw_brick(x, y)
             self.bricks_remaining -= 1
+            self.destroyed_bricks += 1
+            if self.meanies_enabled and self.destroyed_bricks >= self.next_meanie_at:
+                self.spawn_meanie()
+                self.next_meanie_at = self.destroyed_bricks + randint(3, 5)
             if self.bricks_remaining == 0:
                 self.activate_portal()
             self.score += 10
         return collision, False, collision_type
+
+    def spawn_meanie(self):
+        portal_index = choice((0, 1))
+        if self.meanie_portal_index is None:
+            self.meanie_portal_index = portal_index
+        else:
+            self.pending_meanie_portals.append(portal_index)
+
+    def _update_meanie_portal(self):
+        if self.meanie_portal_index is None:
+            return
+        if self.meanie_portal_hold_timer > 0:
+            self.meanie_portal_hold_timer -= 1
+            if self.meanie_portal_hold_timer > 0:
+                return
+            if self.meanie_portal_release_pending:
+                index = self.meanie_portal_index
+                self.meanies.append(Meanie(((155, 485)[index], 85)))
+                self.meanie_portal_release_pending = False
+                self.meanie_portal_hold_timer = MEANIE_PORTAL_HOLD_DURATION
+            else:
+                self.meanie_portal_direction = -1
+            return
+        self.meanie_portal_timer -= 1
+        if self.meanie_portal_timer > 0:
+            return
+        self.meanie_portal_timer = PORTAL_ANIMATION_SPEED
+        index = self.meanie_portal_index
+        self.meanie_portal_frames[index] += self.meanie_portal_direction
+        if self.meanie_portal_frames[index] == 3:
+            self.meanie_portal_hold_timer = MEANIE_PORTAL_HOLD_DURATION
+            self.meanie_portal_release_pending = True
+        elif self.meanie_portal_frames[index] == 0:
+            self.meanie_portal_index = None
+            self.meanie_portal_direction = 1
+            if self.pending_meanie_portals:
+                self.meanie_portal_index = self.pending_meanie_portals.pop(0)
 
     def activate_portal(self):
         self.portal_active = True
@@ -231,11 +332,14 @@ class Game:
                 self.next_bat_index = (self.next_bat_index + 1) % len(self.bats)
                 self.balls = [Ball(bat=self.bats[self.next_bat_index])]
             self.play_sound("lose_life")
-        for obj in self.impacts + self.barrels + self.bullets:
+        for obj in self.impacts + self.barrels + self.bullets + self.meanies:
             obj.update()
+        self.destroy_meanies_hit_by_bats()
         self.impacts = [impact for impact in self.impacts if impact.time < 16]
         self.barrels = [barrel for barrel in self.barrels if barrel.y < HEIGHT]
         self.bullets = [bullet for bullet in self.bullets if bullet.alive]
+        self.meanies = [meanie for meanie in self.meanies if meanie.y < HEIGHT]
+        self._update_meanie_portal()
         if self.portal_active:
             if self.portal_frame < 3:
                 self.portal_timer -= 1
@@ -271,14 +375,19 @@ class Game:
         screen.blit(image(f"portal_exit{self.portal_frame}"), (WIDTH - 90, HEIGHT - 70))
         if len(self.bats) == 2:
             screen.blit(image(f"portal_exit_left{self.portal_frame}"), (20, HEIGHT - 70))
-        screen.blit(image("portal_meanie00"), (110, 40))
-        screen.blit(image("portal_meanie10"), (440, 40))
+        if self.meanies_enabled:
+            screen.blit(
+                image(f"portal_meanie0{self.meanie_portal_frames[0]}"), (110, 40)
+            )
+            screen.blit(
+                image(f"portal_meanie1{self.meanie_portal_frames[1]}"), (440, 40)
+            )
         screen.set_clip((20, 42, 600, 598))
         screen.blit(self.shadow_surface, (0, 0))
-        for obj in self.barrels + self.balls + self.bats:
+        for obj in self.barrels + self.meanies + self.balls + self.bats:
             obj.shadow.draw(screen)
         screen.blit(self.brick_surface, (0, 0))
-        for obj in self.balls + self.bats + self.barrels + self.bullets:
+        for obj in self.balls + self.bats + self.barrels + self.meanies + self.bullets:
             obj.draw(screen)
         screen.set_clip(None)
         for impact in self.impacts:

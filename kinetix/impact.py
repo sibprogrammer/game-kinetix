@@ -8,5 +8,9 @@ class Impact(Actor):
         self.time = 0
 
     def update(self):
-        self.image = "impact" + hex(self.type)[2:] + str(self.time // 4)
+        self.image = (
+            f"impactf{self.time // 4}"
+            if self.type == "f"
+            else "impact" + hex(self.type)[2:] + str(self.time // 4)
+        )
         self.time += 1

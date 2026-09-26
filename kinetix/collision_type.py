@@ -7,3 +7,4 @@ class CollisionType(Enum):
     BAT_EDGE = 2
     BRICK = 3
     INDESTRUCTIBLE_BRICK = 4
+    MEANIE = 5

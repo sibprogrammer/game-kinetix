@@ -13,6 +13,7 @@ collect power-ups, and enter the portal to advance.
 - Keyboard and joystick controls
 - Multiple brick layouts with destructible, multi-hit, and indestructible bricks
 - Power-ups including bat size changes, magnet, gun, multiball, ball-speed modifiers, portals, and extra lives
+- Meanies that emerge from top portals, fall through the arena, and deflect balls when hit
 - Persistent top-ten high-score table
 - Fullscreen mode
 - Animated effects, sound effects, music track

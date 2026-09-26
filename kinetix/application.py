@@ -38,13 +38,14 @@ GAME_OVER_ANIMATION_FRAMES = 15
 GAME_OVER_MASK_OPACITY = 128
 MAIN_MENU_OPTIONS = ("START", "SETTINGS", "EXIT")
 PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
-SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "BACK")
+SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "MEANIES", "BACK")
 main_menu_selection = 0
 player_selection = 0
 settings_selection = 0
 in_game_music = True
 sound_effects = True
 random_levels = False
+meanies = False
 
 
 def setup_joystick_controls():
@@ -67,7 +68,9 @@ def update_controls():
 def update():
     global state, total_frames
     if runtime.game is None:
-        runtime.game = Game(ai_controls, sound_effects=sound_effects)
+        runtime.game = Game(
+            ai_controls, sound_effects=sound_effects, meanies=meanies
+        )
     total_frames += 1
     update_controls()
     if (
@@ -90,7 +93,9 @@ def update():
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
-            runtime.game = Game(ai_controls, sound_effects=sound_effects)
+            runtime.game = Game(
+                ai_controls, sound_effects=sound_effects, meanies=meanies
+            )
             state = State.TITLE
             if in_game_music:
                 play_music("title_theme")
@@ -112,8 +117,8 @@ def draw_overlay(screen):
             if index == settings_selection:
                 draw_text(screen, ">", (30, y))
             draw_text(screen, option, (70, y))
-            if index < 3:
-                value = (in_game_music, sound_effects, random_levels)[index]
+            if index < 4:
+                value = (in_game_music, sound_effects, random_levels, meanies)[index]
                 draw_text(screen, "ON" if value else "OFF", (470, y))
     elif state == State.PLAYER_SELECTION:
         screen.blit(image("title"), (0, 0))
@@ -295,7 +300,7 @@ def handle_joystick_menu_input():
 
 def handle_menu_input(direction, confirm=False, joystick_index=None):
     global in_game_music, main_menu_selection, player_selection, settings_selection, state
-    global random_levels, sound_effects
+    global meanies, random_levels, sound_effects
     if state == State.TITLE:
         if direction:
             main_menu_selection = min(
@@ -338,6 +343,8 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
                     runtime.game.sound_effects = sound_effects
             elif settings_selection == 2:
                 random_levels = not random_levels
+            elif settings_selection == 3:
+                meanies = not meanies
             else:
                 state = State.TITLE
 
@@ -354,6 +361,7 @@ def start_game(players, joystick_index=None):
         controls,
         random_levels=random_levels,
         sound_effects=sound_effects,
+        meanies=meanies,
     )
     state, paused = State.PLAY, False
     if not in_game_music:
@@ -362,7 +370,7 @@ def start_game(players, joystick_index=None):
 
 def return_to_title():
     global state, paused
-    runtime.game = Game(ai_controls, sound_effects=sound_effects)
+    runtime.game = Game(ai_controls, sound_effects=sound_effects, meanies=meanies)
     state, paused = State.TITLE, False
     if in_game_music:
         play_music("title_theme")
@@ -386,6 +394,7 @@ def initialize():
         in_game_music, \
         sound_effects, \
         random_levels, \
+        meanies, \
         show_fps, \
         fps
     fullscreen_mode = "--windowed" not in sys.argv
@@ -430,6 +439,7 @@ def initialize():
         in_game_music,
         sound_effects,
         random_levels,
+        meanies,
         show_fps,
         fps,
     ) = (
@@ -443,6 +453,7 @@ def initialize():
         0,
         True,
         True,
+        False,
         False,
         False,
         0.0,

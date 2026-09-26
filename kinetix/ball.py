@@ -76,7 +76,10 @@ class Ball(Actor):
             self.y += self.dir.y
             collision = runtime.game.collide(self.x, self.y, self.dir)
             if collision is not None:
-                self.dir.y = -self.dir.y
+                if collision[2] == CollisionType.MEANIE:
+                    self._bounce_from_meanie(collision[0])
+                else:
+                    self.dir.y = -self.dir.y
                 self.y += self.dir.y
                 self._handle_collision(collision)
             elif self.dir.y > 0:
@@ -87,7 +90,10 @@ class Ball(Actor):
     def _collide_axis(self, axis):
         collision = runtime.game.collide(self.x, self.y, self.dir)
         if collision is not None:
-            self.dir.x = -self.dir.x
+            if collision[2] == CollisionType.MEANIE:
+                self._bounce_from_meanie(collision[0])
+            else:
+                self.dir.x = -self.dir.x
             self.x += self.dir.x
             self._handle_collision(collision)
 
@@ -97,6 +103,12 @@ class Ball(Actor):
         if collision[2] == CollisionType.BRICK:
             self.time_since_damaged_brick = 0
         self.collision_sound(collision[2])
+
+    def _bounce_from_meanie(self, position):
+        normal = Vector2(self.x, self.y) - Vector2(position)
+        if normal.length_squared() == 0:
+            normal = -self.dir
+        self.dir = self.dir.reflect(normal.normalize())
 
     def _handle_bat_collision(self, previous_y):
         for bat in sorted(runtime.game.bats, key=lambda candidate: candidate.y):
@@ -154,6 +166,7 @@ class Ball(Actor):
         sounds = {
             CollisionType.BRICK: "hit_brick",
             CollisionType.INDESTRUCTIBLE_BRICK: "hit_brick",
+            CollisionType.MEANIE: "hit_brick",
             CollisionType.WALL: "hit_wall",
         }
         if collision_type in sounds:
