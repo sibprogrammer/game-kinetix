@@ -26,9 +26,10 @@ collect power-ups, and enter the portal to advance.
 | Move right | Right Arrow | D |
 | Fire / select | Space | S |
 
-Joysticks are also supported for up to two players. At the title screen, use Up/Down to select one or two players, then
-press the fire button to start (X for PlayStation controllers). During a game, press Enter to pause and Escape to
-return to the title screen; press Escape from the title screen to quit.
+Joysticks are also supported for up to two players. At the title screen, use Up/Down and Space to select **Start**,
+**Settings**, or **Exit**. Select Start to choose one or two players on the next screen. During a game, press Enter
+to pause and Escape to return to the title screen; select **Back** or press Escape to return from player selection.
+Press Escape from the title screen to quit.
 
 ## Run
 

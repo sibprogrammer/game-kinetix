@@ -36,9 +36,11 @@ ROOT = Path(__file__).parent.parent
 GAME_OVER_TEXT = "GAME OVER"
 GAME_OVER_ANIMATION_FRAMES = 15
 GAME_OVER_MASK_OPACITY = 128
-MAIN_MENU_OPTIONS = ("1 PLAYER", "2 PLAYERS", "SETTINGS")
+MAIN_MENU_OPTIONS = ("START", "SETTINGS", "EXIT")
+PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
 SETTINGS_OPTIONS = ("MUSIC", "RANDOM LEVEL", "BACK")
 main_menu_selection = 0
+player_selection = 0
 settings_selection = 0
 in_game_music = True
 random_levels = False
@@ -72,15 +74,9 @@ def update():
         and any(controls.pause_pressed() for controls in runtime.joystick_controls)
     ):
         toggle_pause()
-    if state in (State.TITLE, State.SETTINGS):
+    if state in (State.TITLE, State.PLAYER_SELECTION, State.SETTINGS):
         ai_controls.update()
         runtime.game.update()
-        if (
-            state == State.TITLE
-            and main_menu_selection < 2
-            and any(controls.fire_pressed() for controls in player_controls[:num_players])
-        ):
-            start_game(main_menu_selection + 1)
     elif state == State.PLAY:
         if not paused:
             if runtime.game.lives > 0:
@@ -117,6 +113,13 @@ def draw_overlay(screen):
             if index < 2:
                 value = in_game_music if index == 0 else random_levels
                 draw_text(screen, "ON" if value else "OFF", (470, y))
+    elif state == State.PLAYER_SELECTION:
+        screen.blit(image("title"), (0, 0))
+        for index, option in enumerate(PLAYER_SELECTION_OPTIONS):
+            y = 430 + index * 60
+            if index == player_selection:
+                draw_text(screen, ">", (120, y))
+            draw_text(screen, option, (163, y))
     elif state == State.GAME_OVER:
         draw_game_over(screen)
         draw_sprite_text_centered(screen, "HIGH SCORES", 70, "white")
@@ -225,7 +228,7 @@ def toggle_pause():
 
 
 def on_key_down(key):
-    global main_menu_selection, paused, settings_selection, show_fps, state
+    global main_menu_selection, paused, player_selection, settings_selection, show_fps, state
     global in_game_music, random_levels
     if key == K_f and debug_mode:
         show_fps = not show_fps
@@ -241,12 +244,30 @@ def on_key_down(key):
                 len(MAIN_MENU_OPTIONS) - 1, main_menu_selection + 1
             )
         elif key == K_SPACE:
-            if main_menu_selection == len(MAIN_MENU_OPTIONS) - 1:
+            if main_menu_selection == 0:
+                player_selection = 0
+                state = State.PLAYER_SELECTION
+            elif main_menu_selection == 1:
                 state = State.SETTINGS
             else:
-                start_game(main_menu_selection + 1)
+                runtime.running = False
         elif key == K_ESCAPE:
             runtime.running = False
+        return
+    if state == State.PLAYER_SELECTION:
+        if key == K_UP:
+            player_selection = max(0, player_selection - 1)
+        elif key == K_DOWN:
+            player_selection = min(
+                len(PLAYER_SELECTION_OPTIONS) - 1, player_selection + 1
+            )
+        elif key == K_SPACE:
+            if player_selection < 2:
+                start_game(player_selection + 1)
+            else:
+                state = State.TITLE
+        elif key == K_ESCAPE:
+            state = State.TITLE
         return
     if state == State.SETTINGS:
         if key == K_UP:
@@ -308,6 +329,7 @@ def initialize():
         paused, \
         num_players, \
         main_menu_selection, \
+        player_selection, \
         settings_selection, \
         in_game_music, \
         random_levels, \
@@ -350,6 +372,7 @@ def initialize():
         paused,
         num_players,
         main_menu_selection,
+        player_selection,
         settings_selection,
         in_game_music,
         random_levels,
@@ -361,6 +384,7 @@ def initialize():
         0,
         False,
         1,
+        0,
         0,
         0,
         True,
