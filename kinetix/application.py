@@ -275,17 +275,23 @@ def draw():
 
 
 def play_music(name):
+    if pygame.mixer.get_init() is None:
+        return
     pygame.mixer.music.load(ROOT / "music" / f"{name}.ogg")
     pygame.mixer.music.play(-1)
 
 
 def stop_music():
+    if pygame.mixer.get_init() is None:
+        return
     pygame.mixer.music.stop()
 
 
 def toggle_pause():
     global paused
     paused = not paused
+    if pygame.mixer.get_init() is None:
+        return
     if paused:
         pygame.mixer.music.pause()
     else:
@@ -495,7 +501,8 @@ def initialize():
         runtime.screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Kinetix")
     pygame.display.set_icon(image("app_icon"))
-    pygame.mixer.music.set_volume(0.3)
+    if pygame.mixer.get_init() is not None:
+        pygame.mixer.music.set_volume(0.3)
     keyboard_controls, second_keyboard_controls = (
         KeyboardControls(),
         KeyboardControls("a", "d", "s"),
