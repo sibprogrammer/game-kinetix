@@ -73,7 +73,10 @@ def update():
     global high_scores, state, total_frames
     if runtime.game is None:
         runtime.game = Game(
-            ai_controls, sound_effects=sound_effects, meanies=meanies
+            ai_controls,
+            random_levels=True,
+            sound_effects=sound_effects,
+            meanies=meanies,
         )
     total_frames += 1
     update_controls()
@@ -98,7 +101,10 @@ def update():
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
             runtime.game = Game(
-                ai_controls, sound_effects=sound_effects, meanies=meanies
+                ai_controls,
+                random_levels=True,
+                sound_effects=sound_effects,
+                meanies=meanies,
             )
             state = State.TITLE
             if in_game_music:
@@ -399,7 +405,12 @@ def start_game(players, joystick_index=None):
 
 def return_to_title():
     global state, paused
-    runtime.game = Game(ai_controls, sound_effects=sound_effects, meanies=meanies)
+    runtime.game = Game(
+        ai_controls,
+        random_levels=True,
+        sound_effects=sound_effects,
+        meanies=meanies,
+    )
     state, paused = State.TITLE, False
     if in_game_music:
         play_music("title_theme")

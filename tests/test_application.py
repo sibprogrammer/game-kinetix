@@ -183,3 +183,28 @@ def test_debug_mode_does_not_record_high_scores(monkeypatch):
     application.update()
 
     assert application.high_scores == [400] + [0] * 9
+
+
+def test_ai_controlled_title_game_uses_random_levels(monkeypatch):
+    created_games = []
+
+    class FakeGame:
+        def __init__(self, controls, **kwargs):
+            created_games.append((controls, kwargs))
+
+    monkeypatch.setattr(application, "Game", FakeGame)
+    monkeypatch.setattr(application, "state", State.GAME_OVER)
+    monkeypatch.setattr(application, "paused", True)
+
+    application.return_to_title()
+
+    assert created_games == [
+        (
+            application.ai_controls,
+            {
+                "random_levels": True,
+                "sound_effects": application.sound_effects,
+                "meanies": application.meanies,
+            },
+        )
+    ]
