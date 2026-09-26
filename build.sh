@@ -21,6 +21,7 @@ uv run --locked pyinstaller \
   --workpath build/pyinstaller \
   --specpath build \
   --add-data "${project_root}/images:images" \
+  --add-data "${project_root}/fonts:fonts" \
   --add-data "${project_root}/levels:levels" \
   --add-data "${project_root}/music:music" \
   --add-data "${project_root}/sounds:sounds" \

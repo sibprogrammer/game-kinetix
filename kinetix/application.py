@@ -12,6 +12,7 @@ from .assets import (
     FONT_GLYPH_WIDTH,
     draw_text,
     image,
+    render_debug_text,
 )
 from .constants import HEIGHT, WIDTH
 from .controls import AIControls, JoystickControls, KeyboardControls, PlayerControls
@@ -154,12 +155,33 @@ def draw_overlay(screen):
             ((WIDTH - pause_width) // 2, 500),
         )
     if show_debug_info:
-        text = pygame.font.Font(None, 24).render(f"FPS: {fps:.0f}", True, "white")
-        screen.blit(text, text.get_rect(topright=(WIDTH - 10, 10)))
-        text = pygame.font.Font(None, 24).render(
-            f"Map: {runtime.game.level_map_name}", True, "white"
+        draw_debug_info(
+            screen,
+            f"FPS: {fps:.0f}",
+            f"Map: {runtime.game.level_map_name}",
+            f"Blocks: {runtime.game.bricks_remaining}",
+            f"Speed: {runtime.game.balls[0].speed}",
         )
-        screen.blit(text, text.get_rect(topright=(WIDTH - 10, 35)))
+
+
+def draw_debug_info(screen, *lines):
+    text_top = 20
+    line_spacing = 4
+    surfaces = [render_debug_text(line) for line in lines]
+    rects = []
+    y = text_top
+    for surface in surfaces:
+        rects.append(surface.get_rect(topright=(WIDTH - 10, y)))
+        y += surface.get_height() + line_spacing
+    background_rect = rects[0]
+    for rect in rects[1:]:
+        background_rect = background_rect.union(rect)
+    background_rect = background_rect.inflate(16, 16)
+    background = pygame.Surface(background_rect.size, pygame.SRCALPHA)
+    background.fill((0, 0, 0, 128))
+    screen.blit(background, background_rect)
+    for surface, rect in zip(surfaces, rects):
+        screen.blit(surface, rect)
 
 
 def draw_game_over(screen):
