@@ -63,7 +63,7 @@ def brick_collide(x, y, grid_x, grid_y, radius):
 
 
 class Game:
-    def __init__(self, controls=None, lives=3, random_levels=False):
+    def __init__(self, controls=None, lives=3, random_levels=False, sound_effects=True):
         if controls is None:
             self.controls = (AIControls(),)
         elif isinstance(controls, tuple):
@@ -72,6 +72,7 @@ class Game:
             self.controls = (controls,)
         self.lives, self.score = lives, 0
         self.random_levels = random_levels
+        self.sound_effects = sound_effects
         self.level_order = []
         self.next_bat_index = randint(0, len(self.controls) - 1)
         self.new_level(self.next_level_number())
@@ -289,7 +290,7 @@ class Game:
                 screen.blit(image("life"), (index * 50, HEIGHT - 20))
 
     def play_sound(self, name, count=1):
-        if not self.in_demo_mode():
+        if self.sound_effects and not self.in_demo_mode():
             try:
                 sound(name + str(randint(0, count - 1))).play()
             except pygame.error as error:

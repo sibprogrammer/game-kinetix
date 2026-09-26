@@ -38,11 +38,12 @@ GAME_OVER_ANIMATION_FRAMES = 15
 GAME_OVER_MASK_OPACITY = 128
 MAIN_MENU_OPTIONS = ("START", "SETTINGS", "EXIT")
 PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
-SETTINGS_OPTIONS = ("MUSIC", "RANDOM LEVEL", "BACK")
+SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "BACK")
 main_menu_selection = 0
 player_selection = 0
 settings_selection = 0
 in_game_music = True
+sound_effects = True
 random_levels = False
 
 
@@ -66,7 +67,7 @@ def update_controls():
 def update():
     global state, total_frames
     if runtime.game is None:
-        runtime.game = Game(ai_controls)
+        runtime.game = Game(ai_controls, sound_effects=sound_effects)
     total_frames += 1
     update_controls()
     if (
@@ -88,7 +89,7 @@ def update():
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
         if any(controls.fire_pressed() for controls in player_controls[:num_players]):
-            runtime.game = Game(ai_controls)
+            runtime.game = Game(ai_controls, sound_effects=sound_effects)
             state = State.TITLE
             if in_game_music:
                 play_music("title_theme")
@@ -110,8 +111,8 @@ def draw_overlay(screen):
             if index == settings_selection:
                 draw_text(screen, ">", (30, y))
             draw_text(screen, option, (70, y))
-            if index < 2:
-                value = in_game_music if index == 0 else random_levels
+            if index < 3:
+                value = (in_game_music, sound_effects, random_levels)[index]
                 draw_text(screen, "ON" if value else "OFF", (470, y))
     elif state == State.PLAYER_SELECTION:
         screen.blit(image("title"), (0, 0))
@@ -229,7 +230,7 @@ def toggle_pause():
 
 def on_key_down(key):
     global main_menu_selection, paused, player_selection, settings_selection, show_fps, state
-    global in_game_music, random_levels
+    global in_game_music, random_levels, sound_effects
     if key == K_f and debug_mode:
         show_fps = not show_fps
     if key == K_g and debug_mode:
@@ -284,6 +285,10 @@ def on_key_down(key):
                 else:
                     stop_music()
             elif settings_selection == 1:
+                sound_effects = not sound_effects
+                if runtime.game is not None:
+                    runtime.game.sound_effects = sound_effects
+            elif settings_selection == 2:
                 random_levels = not random_levels
             else:
                 state = State.TITLE
@@ -302,7 +307,11 @@ def on_key_down(key):
 def start_game(players):
     global num_players, paused, state
     num_players = players
-    runtime.game = Game(player_controls[:num_players], random_levels=random_levels)
+    runtime.game = Game(
+        player_controls[:num_players],
+        random_levels=random_levels,
+        sound_effects=sound_effects,
+    )
     state, paused = State.PLAY, False
     if not in_game_music:
         stop_music()
@@ -310,7 +319,7 @@ def start_game(players):
 
 def return_to_title():
     global state, paused
-    runtime.game = Game(ai_controls)
+    runtime.game = Game(ai_controls, sound_effects=sound_effects)
     state, paused = State.TITLE, False
     if in_game_music:
         play_music("title_theme")
@@ -332,6 +341,7 @@ def initialize():
         player_selection, \
         settings_selection, \
         in_game_music, \
+        sound_effects, \
         random_levels, \
         show_fps, \
         fps
@@ -375,6 +385,7 @@ def initialize():
         player_selection,
         settings_selection,
         in_game_music,
+        sound_effects,
         random_levels,
         show_fps,
         fps,
@@ -387,6 +398,7 @@ def initialize():
         0,
         0,
         0,
+        True,
         True,
         False,
         False,
