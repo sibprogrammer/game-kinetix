@@ -1,4 +1,4 @@
-from pygame.locals import K_ESCAPE, K_SPACE, K_d
+from pygame.locals import K_ESCAPE, K_SLASH, K_SPACE
 
 from kinetix import application, runtime
 from kinetix.joystick_controls import JoystickControls
@@ -150,11 +150,11 @@ def test_escape_returns_to_title_from_game_over(monkeypatch):
     assert returned_to_title == [True]
 
 
-def test_d_toggles_debug_information(monkeypatch):
+def test_slash_toggles_debug_information(monkeypatch):
     monkeypatch.setattr(application, "debug_mode", True)
     monkeypatch.setattr(application, "show_debug_info", False)
 
-    application.on_key_down(K_d)
+    application.on_key_down(K_SLASH)
 
     assert application.show_debug_info is True
 

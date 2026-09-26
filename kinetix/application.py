@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 import pygame
-from pygame.locals import K_DOWN, K_ESCAPE, K_RETURN, K_SPACE, K_UP, K_d, K_g, K_p
+from pygame.locals import K_DOWN, K_ESCAPE, K_RETURN, K_SLASH, K_SPACE, K_UP, K_g, K_p
 
 from . import runtime
 from .assets import (
@@ -300,7 +300,7 @@ def toggle_pause():
 
 def on_key_down(key):
     global paused, show_debug_info, state
-    if key == K_d and debug_mode:
+    if key == K_SLASH and debug_mode:
         show_debug_info = not show_debug_info
     if key == K_g and debug_mode:
         state, paused = State.GAME_OVER, False
