@@ -13,12 +13,18 @@ class JoystickControls(Controls):
         controller.init()
         self.controller = controller.Controller.from_joystick(joystick)
         self.pause_previous_down = self.is_pause_pressed = False
+        self.menu_y_previous = 0
+        self.is_menu_up_pressed = self.is_menu_down_pressed = False
 
     def update(self):
         super().update()
         pause_down = self.controller.get_button(pygame.CONTROLLER_BUTTON_START) != 0
         self.is_pause_pressed = pause_down and not self.pause_previous_down
         self.pause_previous_down = pause_down
+        menu_y = self.get_y()
+        self.is_menu_up_pressed = menu_y < 0 and self.menu_y_previous >= 0
+        self.is_menu_down_pressed = menu_y > 0 and self.menu_y_previous <= 0
+        self.menu_y_previous = menu_y
 
     def get_x(self):
         if self.joystick.get_numhats() > 0:
@@ -48,3 +54,9 @@ class JoystickControls(Controls):
 
     def pause_pressed(self):
         return self.is_pause_pressed
+
+    def menu_up_pressed(self):
+        return self.is_menu_up_pressed
+
+    def menu_down_pressed(self):
+        return self.is_menu_down_pressed

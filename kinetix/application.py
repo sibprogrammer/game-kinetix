@@ -78,6 +78,7 @@ def update():
     if state in (State.TITLE, State.PLAYER_SELECTION, State.SETTINGS):
         ai_controls.update()
         runtime.game.update()
+        handle_joystick_menu_input()
     elif state == State.PLAY:
         if not paused:
             if runtime.game.lives > 0:
@@ -229,8 +230,7 @@ def toggle_pause():
 
 
 def on_key_down(key):
-    global main_menu_selection, paused, player_selection, settings_selection, show_fps, state
-    global in_game_music, random_levels, sound_effects
+    global paused, show_fps, state
     if key == K_f and debug_mode:
         show_fps = not show_fps
     if key == K_g and debug_mode:
@@ -239,12 +239,61 @@ def on_key_down(key):
         runtime.game.activate_portal()
     if state == State.TITLE:
         if key == K_UP:
-            main_menu_selection = max(0, main_menu_selection - 1)
+            handle_menu_input(-1)
         elif key == K_DOWN:
-            main_menu_selection = min(
-                len(MAIN_MENU_OPTIONS) - 1, main_menu_selection + 1
-            )
+            handle_menu_input(1)
         elif key == K_SPACE:
+            handle_menu_input(0, True)
+        elif key == K_ESCAPE:
+            runtime.running = False
+        return
+    if state == State.PLAYER_SELECTION:
+        if key == K_UP:
+            handle_menu_input(-1)
+        elif key == K_DOWN:
+            handle_menu_input(1)
+        elif key == K_SPACE:
+            handle_menu_input(0, True)
+        elif key == K_ESCAPE:
+            state = State.TITLE
+        return
+    if state == State.SETTINGS:
+        if key == K_UP:
+            handle_menu_input(-1)
+        elif key == K_DOWN:
+            handle_menu_input(1)
+        elif key == K_SPACE:
+            handle_menu_input(0, True)
+        elif key == K_ESCAPE:
+            state = State.TITLE
+        return
+    if key == K_ESCAPE:
+        if state == State.PLAY:
+            return_to_title()
+        else:
+            runtime.running = False
+    if key == K_RETURN and state == State.PLAY:
+        toggle_pause()
+
+
+def handle_joystick_menu_input():
+    if any(controls.menu_up_pressed() for controls in runtime.joystick_controls):
+        handle_menu_input(-1)
+    elif any(controls.menu_down_pressed() for controls in runtime.joystick_controls):
+        handle_menu_input(1)
+    elif any(controls.fire_pressed() for controls in player_controls):
+        handle_menu_input(0, True)
+
+
+def handle_menu_input(direction, confirm=False):
+    global in_game_music, main_menu_selection, player_selection, settings_selection, state
+    global random_levels, sound_effects
+    if state == State.TITLE:
+        if direction:
+            main_menu_selection = min(
+                max(0, main_menu_selection + direction), len(MAIN_MENU_OPTIONS) - 1
+            )
+        elif confirm:
             if main_menu_selection == 0:
                 player_selection = 0
                 state = State.PLAYER_SELECTION
@@ -252,32 +301,23 @@ def on_key_down(key):
                 state = State.SETTINGS
             else:
                 runtime.running = False
-        elif key == K_ESCAPE:
-            runtime.running = False
-        return
-    if state == State.PLAYER_SELECTION:
-        if key == K_UP:
-            player_selection = max(0, player_selection - 1)
-        elif key == K_DOWN:
+    elif state == State.PLAYER_SELECTION:
+        if direction:
             player_selection = min(
-                len(PLAYER_SELECTION_OPTIONS) - 1, player_selection + 1
+                max(0, player_selection + direction),
+                len(PLAYER_SELECTION_OPTIONS) - 1,
             )
-        elif key == K_SPACE:
+        elif confirm:
             if player_selection < 2:
                 start_game(player_selection + 1)
             else:
                 state = State.TITLE
-        elif key == K_ESCAPE:
-            state = State.TITLE
-        return
-    if state == State.SETTINGS:
-        if key == K_UP:
-            settings_selection = max(0, settings_selection - 1)
-        elif key == K_DOWN:
+    elif state == State.SETTINGS:
+        if direction:
             settings_selection = min(
-                len(SETTINGS_OPTIONS) - 1, settings_selection + 1
+                max(0, settings_selection + direction), len(SETTINGS_OPTIONS) - 1
             )
-        elif key == K_SPACE:
+        elif confirm:
             if settings_selection == 0:
                 in_game_music = not in_game_music
                 if in_game_music:
@@ -292,16 +332,6 @@ def on_key_down(key):
                 random_levels = not random_levels
             else:
                 state = State.TITLE
-        elif key == K_ESCAPE:
-            state = State.TITLE
-        return
-    if key == K_ESCAPE:
-        if state == State.PLAY:
-            return_to_title()
-        else:
-            runtime.running = False
-    if key == K_RETURN and state == State.PLAY:
-        toggle_pause()
 
 
 def start_game(players):
