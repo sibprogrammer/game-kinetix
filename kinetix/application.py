@@ -1,5 +1,6 @@
 import os
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import pygame
@@ -37,8 +38,8 @@ show_debug_info = False
 fps = 0.0
 ROOT = Path(__file__).parent.parent
 GAME_OVER_TEXT = "GAME OVER"
-GAME_OVER_ANIMATION_FRAMES = 15
-GAME_OVER_MASK_OPACITY = 128
+GAME_OVER_ANIMATION_FRAMES = 120
+GAME_OVER_LIGHT_STRENGTH = 128
 MENU_LINE_INTERVAL = 70
 MAIN_MENU_EXIT_Y = 550
 MAIN_MENU_OPTIONS = ("START", "HIGH SCORES", "SETTINGS", "EXIT")
@@ -232,17 +233,28 @@ def draw_game_over(screen):
     text_surface = pygame.Surface((text_width, FONT_GLYPH_SIZE[1]), pygame.SRCALPHA)
     draw_text(text_surface, GAME_OVER_TEXT, (0, 0))
 
-    mask_width = text_width // 3
-    animation_frame = total_frames // 4 % GAME_OVER_ANIMATION_FRAMES
+    light_mask = game_over_light_mask()
+    mask_width = light_mask.get_width()
+    animation_frame = total_frames % GAME_OVER_ANIMATION_FRAMES
     mask_x = (
         animation_frame * (text_width + mask_width) // GAME_OVER_ANIMATION_FRAMES
         - mask_width
     )
-    mask = pygame.Surface((mask_width, FONT_GLYPH_SIZE[1]), pygame.SRCALPHA)
-    mask.fill((0, 0, 0, GAME_OVER_MASK_OPACITY))
-    mask.blit(text_surface, (-mask_x, 0), special_flags=pygame.BLEND_RGBA_MULT)
-    text_surface.blit(mask, (mask_x, 0))
+    light = pygame.Surface(text_surface.get_size())
+    light.fill((GAME_OVER_LIGHT_STRENGTH,) * 3)
+    light.blit(light_mask, (mask_x, 0), special_flags=pygame.BLEND_RGB_ADD)
+    text_surface.blit(light, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
     screen.blit(text_surface, ((WIDTH - text_width) // 2, 500))
+
+
+@lru_cache
+def game_over_light_mask():
+    source = image("light_mask")
+    mask = pygame.transform.scale(source, (source.get_width(), FONT_GLYPH_SIZE[1]))
+    mask.fill(
+        (255 - GAME_OVER_LIGHT_STRENGTH,) * 3, special_flags=pygame.BLEND_RGB_MULT
+    )
+    return mask
 
 
 def draw_sprite_text_centered(screen, text, y, color):
