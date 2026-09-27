@@ -45,6 +45,8 @@ MAIN_MENU_OPTIONS = ("START", "HIGH SCORES", "SETTINGS", "EXIT")
 PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
 SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "MEANIES", "BACK")
 HIGH_SCORES_OPTIONS = ("BACK",)
+PAUSE_OPTIONS = ("RESUME", "EXIT")
+PAUSE_FIRST_OPTION_Y = 410
 MAIN_MENU_FIRST_OPTION_Y = MAIN_MENU_EXIT_Y - (
     len(MAIN_MENU_OPTIONS) - 1
 ) * MENU_LINE_INTERVAL
@@ -52,6 +54,7 @@ main_menu_selection = 0
 player_selection = 0
 settings_selection = 0
 high_scores_selection = 0
+pause_selection = 0
 in_game_music = True
 sound_effects = True
 random_levels = False
@@ -102,7 +105,9 @@ def update():
         runtime.game.update()
         handle_joystick_menu_input()
     elif state == State.PLAY:
-        if not paused:
+        if paused:
+            handle_joystick_menu_input()
+        else:
             if runtime.game.lives > 0:
                 runtime.game.update()
             else:
@@ -181,8 +186,13 @@ def draw_overlay(screen):
         draw_text(
             screen,
             pause_text,
-            ((WIDTH - pause_width) // 2, 500),
+            ((WIDTH - pause_width) // 2, 340),
         )
+        for index, option in enumerate(PAUSE_OPTIONS):
+            y = PAUSE_FIRST_OPTION_Y + index * MENU_LINE_INTERVAL
+            if index == pause_selection:
+                draw_text(screen, ">", (190, y))
+            draw_text(screen, option, (233, y))
     if show_debug_info:
         draw_debug_info(
             screen,
@@ -288,8 +298,10 @@ def stop_music():
 
 
 def toggle_pause():
-    global paused
+    global paused, pause_selection
     paused = not paused
+    if paused:
+        pause_selection = 0
     if pygame.mixer.get_init() is None:
         return
     if paused:
@@ -346,6 +358,16 @@ def on_key_down(key):
         elif key == K_ESCAPE:
             state = State.TITLE
         return
+    if state == State.PLAY and paused:
+        if key == K_UP:
+            handle_menu_input(-1)
+        elif key == K_DOWN:
+            handle_menu_input(1)
+        elif key == K_SPACE:
+            handle_menu_input(0, True)
+        elif key == K_RETURN:
+            toggle_pause()
+        return
     if key == K_ESCAPE:
         if state in (State.PLAY, State.GAME_OVER):
             return_to_title()
@@ -373,7 +395,8 @@ def handle_joystick_menu_input():
 
 
 def handle_menu_input(direction, confirm=False, joystick_index=None):
-    global high_scores_selection, in_game_music, main_menu_selection, player_selection
+    global high_scores_selection, in_game_music, main_menu_selection, pause_selection
+    global player_selection
     global settings_selection, state
     global meanies, random_levels, sound_effects
     if state == State.TITLE:
@@ -433,6 +456,16 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
             )
         elif confirm:
             state = State.TITLE
+    elif state == State.PLAY and paused:
+        if direction:
+            pause_selection = min(
+                max(0, pause_selection + direction), len(PAUSE_OPTIONS) - 1
+            )
+        elif confirm:
+            if pause_selection == 0:
+                toggle_pause()
+            else:
+                return_to_title()
 
 
 def start_game(players, joystick_index=None):

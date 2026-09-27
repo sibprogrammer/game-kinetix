@@ -1,4 +1,4 @@
-from pygame.locals import K_ESCAPE, K_SLASH, K_SPACE
+from pygame.locals import K_DOWN, K_ESCAPE, K_SLASH, K_SPACE, K_UP
 
 from kinetix import application, runtime
 from kinetix.joystick_controls import JoystickControls
@@ -147,6 +147,62 @@ def test_escape_returns_to_title_from_game_over(monkeypatch):
 
     application.on_key_down(K_ESCAPE)
 
+    assert returned_to_title == [True]
+
+
+def test_pause_menu_navigates_and_resumes(monkeypatch):
+    monkeypatch.setattr(application, "state", State.PLAY)
+    monkeypatch.setattr(application, "paused", True)
+    monkeypatch.setattr(application, "pause_selection", 1)
+    resumed = []
+    monkeypatch.setattr(application, "toggle_pause", lambda: resumed.append(True))
+
+    application.on_key_down(K_UP)
+    application.on_key_down(K_SPACE)
+
+    assert application.pause_selection == 0
+    assert resumed == [True]
+
+
+def test_pause_menu_exit_returns_to_title_without_recording_score(monkeypatch):
+    monkeypatch.setattr(application, "state", State.PLAY)
+    monkeypatch.setattr(application, "paused", True)
+    monkeypatch.setattr(application, "pause_selection", 0)
+    monkeypatch.setattr(application, "high_scores", [400] + [0] * 9)
+    returned_to_title = []
+    monkeypatch.setattr(
+        application,
+        "return_to_title",
+        lambda: returned_to_title.append(True),
+    )
+
+    application.on_key_down(K_DOWN)
+    application.on_key_down(K_SPACE)
+
+    assert application.pause_selection == 1
+    assert returned_to_title == [True]
+    assert application.high_scores == [400] + [0] * 9
+
+
+def test_joystick_confirms_pause_menu_selection(monkeypatch):
+    joystick = FakeJoystickControls(down=True)
+    monkeypatch.setattr(runtime, "joystick_controls", [joystick])
+    monkeypatch.setattr(application, "state", State.PLAY)
+    monkeypatch.setattr(application, "paused", True)
+    monkeypatch.setattr(application, "pause_selection", 0)
+    returned_to_title = []
+    monkeypatch.setattr(
+        application,
+        "return_to_title",
+        lambda: returned_to_title.append(True),
+    )
+
+    application.handle_joystick_menu_input()
+    joystick.down = False
+    joystick.fire = True
+    application.handle_joystick_menu_input()
+
+    assert application.pause_selection == 1
     assert returned_to_title == [True]
 
 
