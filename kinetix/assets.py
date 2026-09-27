@@ -35,7 +35,14 @@ def render_debug_text(text):
     rendered.fill(
         (255, 255, 255, DEBUG_TEXT_OPACITY), special_flags=pygame.BLEND_RGBA_MULT
     )
+    interlace(rendered)
     return rendered
+
+
+def interlace(surface):
+    width, height = surface.get_size()
+    for y in range(0, height, 2):
+        surface.fill((0, 0, 0, 0), (0, y, width, 1))
 
 
 @lru_cache
