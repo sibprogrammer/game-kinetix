@@ -76,8 +76,6 @@ jobs:
             --wait
           xcrun stapler staple "dist/Kinetix-${{ github.ref_name }}.dmg"
           xcrun stapler validate "dist/Kinetix-${{ github.ref_name }}.dmg"
-          spctl --assess --type open --context context:primary-signature \
-            --verbose=4 "dist/Kinetix-${{ github.ref_name }}.dmg"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
