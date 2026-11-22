@@ -1,6 +1,9 @@
+import pygame
+import pytest
 from pygame.locals import K_DOWN, K_ESCAPE, K_SLASH, K_SPACE, K_UP
 
 from kinetix import application, runtime
+from kinetix.controls import KeyboardControls, PlayerControls
 from kinetix.joystick_controls import JoystickControls
 from kinetix.state import State
 
@@ -146,6 +149,82 @@ def test_escape_returns_to_title_from_game_over(monkeypatch):
     )
 
     application.on_key_down(K_ESCAPE)
+
+    assert returned_to_title == [True]
+
+
+@pytest.mark.parametrize(("players", "joystick_index"), [(1, 1), (2, None)])
+def test_play_again_preserves_the_finished_games_players_and_settings(
+    monkeypatch, players, joystick_index
+):
+    pygame.display.set_mode((1, 1))
+    keyboard = KeyboardControls()
+    fire_down = False
+    monkeypatch.setattr(keyboard, "fire_down", lambda: fire_down)
+    monkeypatch.setattr(application, "keyboard_controls", keyboard)
+    monkeypatch.setattr(
+        application,
+        "player_controls",
+        (PlayerControls(keyboard), PlayerControls(KeyboardControls("a", "d", "s"))),
+    )
+    monkeypatch.setattr(runtime, "joystick_controls", [])
+    monkeypatch.setattr(runtime, "game", None)
+    monkeypatch.setattr(application, "state", State.TITLE)
+    monkeypatch.setattr(application, "paused", False)
+    monkeypatch.setattr(application, "debug_mode", False)
+    monkeypatch.setattr(application, "random_levels", True)
+    monkeypatch.setattr(application, "sound_effects", False)
+    monkeypatch.setattr(application, "meanies", True)
+    monkeypatch.setattr(application, "high_scores", [])
+    monkeypatch.setattr(application, "post_game_selection", 1)
+
+    application.start_game(players, joystick_index)
+    finished_game = runtime.game
+    finished_game.lives, finished_game.score = 0, 500
+    application.update()
+    assert application.state == State.GAME_OVER
+
+    fire_down = True
+    application.update()
+    application.update()
+    assert application.state == State.POST_GAME_MENU
+    assert application.post_game_selection == 0
+    assert runtime.game is finished_game
+
+    fire_down = False
+    application.update()
+    fire_down = True
+    application.update()
+    application.update()
+
+    assert application.state == State.PLAY
+    assert runtime.game is not finished_game
+    assert runtime.game.controls is finished_game.controls
+    assert runtime.game.random_levels is True
+    assert runtime.game.meanies_enabled is True
+    assert runtime.game.sound_effects is False
+    assert runtime.game.lives == 3
+    assert runtime.game.score == 0
+    assert runtime.game.balls[0].stuck_to_bat
+    assert application.high_scores.count(500) == 1
+
+
+def test_joystick_confirms_main_menu_after_game_over(monkeypatch):
+    joystick = FakeJoystickControls(down=True)
+    monkeypatch.setattr(runtime, "joystick_controls", [joystick])
+    monkeypatch.setattr(application, "state", State.POST_GAME_MENU)
+    monkeypatch.setattr(application, "post_game_selection", 0)
+    returned_to_title = []
+    monkeypatch.setattr(
+        application, "return_to_title", lambda: returned_to_title.append(True)
+    )
+
+    application.handle_joystick_menu_input()
+    assert application.post_game_selection == 1
+
+    joystick.down = False
+    joystick.fire = True
+    application.handle_joystick_menu_input()
 
     assert returned_to_title == [True]
 

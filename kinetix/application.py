@@ -33,7 +33,6 @@ ai_controls = AIControls()
 state = State.TITLE
 total_frames = 0
 paused = False
-num_players = 1
 show_debug_info = False
 fps = 0.0
 ROOT = Path(__file__).parent.parent
@@ -46,6 +45,7 @@ MAIN_MENU_OPTIONS = ("START", "HIGH SCORES", "SETTINGS", "EXIT")
 PLAYER_SELECTION_OPTIONS = ("1 PLAYER", "2 PLAYERS", "BACK")
 SETTINGS_OPTIONS = ("MUSIC", "SOUNDS", "RANDOM LEVEL", "MEANIES", "BACK")
 HIGH_SCORES_OPTIONS = ("BACK",)
+POST_GAME_OPTIONS = ("PLAY AGAIN", "MAIN MENU")
 PAUSE_OPTIONS = ("RESUME", "EXIT")
 PAUSE_FIRST_OPTION_Y = 410
 MAIN_MENU_FIRST_OPTION_Y = MAIN_MENU_EXIT_Y - (
@@ -55,6 +55,7 @@ main_menu_selection = 0
 player_selection = 0
 settings_selection = 0
 high_scores_selection = 0
+post_game_selection = 0
 pause_selection = 0
 in_game_music = True
 sound_effects = True
@@ -81,7 +82,7 @@ def update_controls():
 
 
 def update():
-    global high_scores, state, total_frames
+    global high_scores, post_game_selection, state, total_frames
     if runtime.game is None:
         runtime.game = Game(
             ai_controls,
@@ -117,16 +118,16 @@ def update():
                     high_scores = record_high_score(runtime.game.score, high_scores)
                 state = State.GAME_OVER
     elif state == State.GAME_OVER:
-        if any(controls.fire_pressed() for controls in player_controls[:num_players]):
-            runtime.game = Game(
-                ai_controls,
-                random_levels=True,
-                sound_effects=sound_effects,
-                meanies=meanies,
-            )
-            state = State.TITLE
-            if in_game_music:
-                play_music("title_theme")
+        if keyboard_controls.fire_pressed() or any(
+            controls.fire_pressed() for controls in runtime.game.controls
+        ):
+            post_game_selection = 0
+            state = State.POST_GAME_MENU
+    elif state == State.POST_GAME_MENU:
+        if keyboard_controls.fire_pressed():
+            handle_menu_input(0, True)
+        else:
+            handle_joystick_menu_input()
 
 
 def draw_overlay(screen):
@@ -181,6 +182,13 @@ def draw_overlay(screen):
                 current_score_color if position == current_score_position else "white"
             )
             draw_sprite_text_centered(screen, score_text, 70 + position * 65, color)
+    elif state == State.POST_GAME_MENU:
+        screen.blit(image("overlay"), (0, 0))
+        for index, option in enumerate(POST_GAME_OPTIONS):
+            y = 260 + index * MENU_LINE_INTERVAL
+            if index == post_game_selection:
+                draw_text(screen, ">", (144, y))
+            draw_text(screen, option, (187, y))
     if paused:
         pause_text = "PAUSED"
         pause_width = FONT_GLYPH_WIDTH + FONT_GLYPH_ADVANCE * (len(pause_text) - 1)
@@ -323,11 +331,13 @@ def toggle_pause():
 
 
 def on_key_down(key):
-    global paused, show_debug_info, state
+    global show_debug_info, state
     if key == K_SLASH and debug_mode:
         show_debug_info = not show_debug_info
-    if key == K_g and debug_mode:
-        state, paused = State.GAME_OVER, False
+    if key == K_g and debug_mode and state == State.PLAY:
+        if paused:
+            toggle_pause()
+        state = State.GAME_OVER
     if key == K_p and debug_mode and state == State.PLAY:
         runtime.game.activate_portal()
     if state == State.TITLE:
@@ -370,6 +380,14 @@ def on_key_down(key):
         elif key == K_ESCAPE:
             state = State.TITLE
         return
+    if state == State.POST_GAME_MENU:
+        if key == K_UP:
+            handle_menu_input(-1)
+        elif key == K_DOWN:
+            handle_menu_input(1)
+        elif key == K_ESCAPE:
+            return_to_title()
+        return
     if state == State.PLAY and paused:
         if key == K_UP:
             handle_menu_input(-1)
@@ -408,7 +426,7 @@ def handle_joystick_menu_input():
 
 def handle_menu_input(direction, confirm=False, joystick_index=None):
     global high_scores_selection, in_game_music, main_menu_selection, pause_selection
-    global player_selection
+    global player_selection, post_game_selection
     global settings_selection, state
     global meanies, random_levels, sound_effects
     if state == State.TITLE:
@@ -468,6 +486,16 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
             )
         elif confirm:
             state = State.TITLE
+    elif state == State.POST_GAME_MENU:
+        if direction:
+            post_game_selection = min(
+                max(0, post_game_selection + direction), len(POST_GAME_OPTIONS) - 1
+            )
+        elif confirm:
+            if post_game_selection == 0:
+                begin_game(runtime.game.controls)
+            else:
+                return_to_title()
     elif state == State.PLAY and paused:
         if direction:
             pause_selection = min(
@@ -481,13 +509,16 @@ def handle_menu_input(direction, confirm=False, joystick_index=None):
 
 
 def start_game(players, joystick_index=None):
-    global num_players, paused, state
-    num_players = players
     controls = (
         (player_controls[joystick_index],)
         if players == 1 and joystick_index is not None
         else player_controls[:players]
     )
+    begin_game(controls)
+
+
+def begin_game(controls):
+    global paused, state
     runtime.game = Game(
         controls,
         random_levels=random_levels,
@@ -523,7 +554,6 @@ def initialize():
         state, \
         total_frames, \
         paused, \
-        num_players, \
         main_menu_selection, \
         player_selection, \
         settings_selection, \
@@ -571,7 +601,6 @@ def initialize():
         runtime.game,
         total_frames,
         paused,
-        num_players,
         main_menu_selection,
         player_selection,
         settings_selection,
@@ -588,7 +617,6 @@ def initialize():
         None,
         0,
         False,
-        1,
         0,
         0,
         0,
